@@ -1,6 +1,9 @@
-### ***Alexey Zertsalov*** **B05-924**
-# MIPT_Homework
-MIPT Homework
+# **MIPT_Homework**
+This is Alexey Zertsalov MIPT Homework
+
+Here is a list of all the algorithms.
+
+## ***Algorithms:***
 
 - Deque
 - FFT
