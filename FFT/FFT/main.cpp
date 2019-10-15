@@ -37,8 +37,7 @@ std::vector <cld> makeGeneralFFT(std::vector <cld> a, cld q)
     
     a0 = makeGeneralFFT(a0, q * q);
     a1 = makeGeneralFFT(a1, q * q);
-    
-    //    cld wn (std::cosl(2.0 * PI / a.size()), (isInverse ? -1 : 1) * std::sinl(2.0 * PI / a.size()));
+
     cld w (1.0, 0.0);
     
     for (size_t i = 0; i < a.size() / 2; i++) {
