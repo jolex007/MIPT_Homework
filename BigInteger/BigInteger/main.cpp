@@ -6,10 +6,12 @@ using std::cout;
 
 int main()
 {
+    int aa, bb;
     BigInteger a, b;
-    cin >> a >> b;
+    cin >> aa >> bb;
+    a = aa; b = bb;
     
-    cout << a + b;
+    cout << aa % bb <<  " " << a % b;
     
     return 0;
 }
