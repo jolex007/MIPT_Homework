@@ -23,6 +23,7 @@ private:
     unsigned char sign;
     // 0 - if positive
     // 1 - if negative
+    
     size_t size;
     size_t capacity;
     
