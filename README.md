@@ -6,6 +6,7 @@ Here is a list of all the algorithms.
 ## ***Data Structures***
 
 - BigInteger
+- Rational numbers
 
 ## ***Algorithms:***
 
