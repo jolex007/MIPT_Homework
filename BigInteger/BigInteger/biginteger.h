@@ -44,6 +44,8 @@ public:
     friend BigInteger & operator /= (BigInteger &, const BigInteger &);
     friend BigInteger & operator %= (BigInteger &, const BigInteger &);
     
+    friend class Rational;
+    
     BigInteger()
     {
         data.clear();
@@ -87,11 +89,9 @@ private:
     void normalize(char);
     void fromString (const std::string & str);
     
-    static BigInteger sum (const BigInteger & first, const BigInteger & second, char result_sign);
-    static BigInteger substraction (const BigInteger & first, const BigInteger & second, char result_sign);
+    static BigInteger sum_and_sub (const BigInteger & first, const BigInteger & second, char result_sign, bool is_sum = true);
     static BigInteger mult (const BigInteger & first, const BigInteger & second, char result_sign);
-    static BigInteger div (const BigInteger & first, const BigInteger & second, char result_sign);
-    static BigInteger mod (const BigInteger & first, const BigInteger & second);
+    static BigInteger div_and_mod (const BigInteger & first, const BigInteger & second, char result_sign, bool is_div = true);
     static char compare_by_abs (const BigInteger & first, const BigInteger & second);
 };
 
@@ -140,7 +140,7 @@ void BigInteger::fromString (const std::string & str)
     normalize();
 }
 
-BigInteger BigInteger::sum (const BigInteger & first, const BigInteger & second, char result_sign)
+BigInteger BigInteger::sum_and_sub (const BigInteger & first, const BigInteger & second, char result_sign, bool is_sum)
 {
     BigInteger result;
     size_t size = std::max(first.data.size(), second.data.size());
@@ -155,16 +155,16 @@ BigInteger BigInteger::sum (const BigInteger & first, const BigInteger & second,
         unsigned char first_term = (i < first.data.size() ? first.data[i] : 0);
         unsigned char second_term = (i < second.data.size() ? second.data[i] : 0);
         
-        result.data.push_back(first_term + second_term + carry);
+        result.data.push_back(is_sum ? first_term + second_term + carry : first_term - second_term - carry);
         
         if (result.data[i] >= BigInteger::base) {
+            result.data[i] += (is_sum ? -BigInteger::base : BigInteger::base);
             carry = 1;
-            result.data[i] -= BigInteger::base;
         } else {
             carry = 0;
         }
     }
-    if (carry) {
+    if (carry && is_sum) {
         result.data.push_back(carry);
     }
     
@@ -173,34 +173,9 @@ BigInteger BigInteger::sum (const BigInteger & first, const BigInteger & second,
     return result;
 }
 
-BigInteger BigInteger::substraction (const BigInteger & first, const BigInteger & second, char result_sign)
-{
-    BigInteger result;
-    size_t size = std::max(first.data.size(), second.data.size());
-    result.sign = result_sign;
-    result.data.clear();
-    result.data.reserve(size + 1);
-    
-    unsigned char carry = 0;
-    
-    for (size_t i = 0; i < size; i++) {
-        unsigned char first_term = (i < first.data.size() ? first.data[i] : 0);
-        unsigned char second_term = (i < second.data.size() ? second.data[i] : 0);
-        
-        result.data.push_back(first_term - second_term - carry);
-        
-        if (result.data[i] >= BigInteger::base) {
-            result.data[i] += BigInteger::base;
-            carry = 1;
-        } else {
-            carry = 0;
-        }
-    }
-    
-    result.normalize();
-    
-    return result;
-}
+
+
+
 
 BigInteger BigInteger::mult (const BigInteger & first, const BigInteger & second, char result_sign)
 {
@@ -233,7 +208,7 @@ BigInteger BigInteger::mult (const BigInteger & first, const BigInteger & second
     return result;
 }
 
-BigInteger BigInteger::div (const BigInteger & first, const BigInteger & second, char result_sign)
+BigInteger BigInteger::div_and_mod (const BigInteger & first, const BigInteger & second, char result_sign, bool is_div)
 {
     if (second == 0) {
         std::invalid_argument("Devision by zero");
@@ -264,47 +239,15 @@ BigInteger BigInteger::div (const BigInteger & first, const BigInteger & second,
         denom = abs(second);
     }
     
-    result.normalize(result_sign);
-    
-    return result;
+    if (is_div) {
+        result.normalize(result_sign);
+        return result;
+    } else {
+        num.normalize(first.sign);
+        return num;
+    }
 }
 
-BigInteger BigInteger::mod (const BigInteger & first, const BigInteger & second)
-{
-    if (second == 0) {
-        std::invalid_argument("Devision by zero");
-    }
-    
-    BigInteger result = 0;
-
-    
-    BigInteger num = abs(first), denom = abs(second), degree;
-    
-    while (num >= denom) {
-        degree = 1;
-        
-        while (num >= denom) {
-            denom *= BigInteger::base;
-            degree *= BigInteger::base;
-        }
-        
-        if (degree > 0) {
-            denom.data.erase(denom.data.begin());
-            degree.data.erase(degree.data.begin());
-        }
-        
-        while (num >= denom) {
-            num -= denom;
-            result += degree;
-        }
-        
-        denom = abs(second);
-    }
-    
-    num.normalize(first.sign);
-    
-    return num;
-}
 
 // 0 - if equal
 // -1 - if first < second
@@ -490,26 +433,26 @@ BigInteger operator -- (BigInteger & element, int)
 BigInteger operator + (const BigInteger & first, const BigInteger & second)
 {
     if (first.sign == second.sign) {
-        return BigInteger::sum(first, second, first.sign);
+        return BigInteger::sum_and_sub(first, second, first.sign, true);
     }
     
     if (BigInteger::compare_by_abs(first, second) >= 0) {
-        return BigInteger::substraction(first, second, first.sign);
+        return BigInteger::sum_and_sub(first, second, first.sign, false);
     } else {
-        return BigInteger::substraction(second, first, second.sign);
+        return BigInteger::sum_and_sub(second, first, second.sign, false);
     }
 }
 
 BigInteger operator - (const BigInteger & first, const BigInteger & second)
 {
     if (first.sign != second.sign) {
-        return BigInteger::sum(first, second, first.sign);
+        return BigInteger::sum_and_sub(first, second, first.sign, true);
     }
     
     if (BigInteger::compare_by_abs(first, second) >= 0) {
-        return BigInteger::substraction(first, second, first.sign);
+        return BigInteger::sum_and_sub(first, second, first.sign, false);
     } else {
-        return BigInteger::substraction(second, first, second.sign == 0 ? 1 : 0);
+        return BigInteger::sum_and_sub(second, first, second.sign == 0 ? 1 : 0, false);
     }
 }
 
@@ -520,12 +463,12 @@ BigInteger operator * (const BigInteger & first, const BigInteger & second)
 
 BigInteger operator / (const BigInteger & first, const BigInteger & second)
 {
-    return BigInteger::div(first, second, first.sign == second.sign ? 0 : 1);
+    return BigInteger::div_and_mod(first, second, first.sign == second.sign ? 0 : 1, true);
 }
 
 BigInteger operator % (const BigInteger & first, const BigInteger & second)
 {
-    return BigInteger::mod(first, second);
+    return BigInteger::div_and_mod(first, second, false, false);
 }
 
 BigInteger & operator += (BigInteger & first, const BigInteger & second)
