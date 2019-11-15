@@ -14,11 +14,15 @@ using std::cin;
 using std::cout;
 
 int main() {
+    BigInteger a1;
+    BigInteger b1;
+    Rational a;
     
-    Rational a = 1;
-    Rational b = 2;
-    Rational c = a / 2;
-    cout << c.toString();
+    cin >> a1 >> b1;
+    a = a1;
+    a /= b1;
+    
+    cout << a.toString() << "\n" << a.asDecimal(5);
     
     
     

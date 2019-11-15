@@ -1,11 +1,3 @@
-//
-//  rational.h
-//  RationalNumbers
-//
-//  Created by Алексей Зерцалов on 27.10.2019.
-//  Copyright © 2019 Алексей Зерцалов. All rights reserved.
-//
-
 #ifndef rational_h
 #define rational_h
 
@@ -13,16 +5,38 @@
 #include <string>
 #include <iostream>
 
+enum SignType {
+    POSITIVE = 0,
+    NEGATIVE = 1
+};
+
+enum CompareType {
+    LOWER,
+    EQUAL,
+    GREATER
+};
+
+
+
 class BigInteger;
-BigInteger abs (BigInteger element);
+
+BigInteger abs (const BigInteger &);
+void swap (BigInteger &, BigInteger &);
+BigInteger gcd (BigInteger, BigInteger);
 
 class BigInteger
 {
 public:
     
+    // Constructors
+    BigInteger();
+    BigInteger(int);
+    
+    // Streams overloading
     friend std::ostream & operator << (std::ostream &, const BigInteger &);
     friend std::istream & operator >> (std::istream &, BigInteger &);
     
+    // Opertors overloading
     BigInteger & operator = (const BigInteger &);
     explicit operator bool();
     
@@ -33,8 +47,8 @@ public:
     friend bool operator > (const BigInteger &, const BigInteger &);
     friend bool operator >= (const BigInteger &, const BigInteger &);
     
-    // Unary minus
-    friend BigInteger operator - (const BigInteger &);
+    friend BigInteger operator - (const BigInteger &); // Unary minus
+    
     friend BigInteger & operator ++ (BigInteger &);
     friend BigInteger operator ++ (BigInteger &, int);
     friend BigInteger & operator -- (BigInteger &);
@@ -54,81 +68,85 @@ public:
     
     friend class Rational;
     
-    BigInteger()
-    {
-        data.clear();
-        data.push_back(0);
-        sign = 0;
-    }
-    
-    BigInteger(int element)
-    {
-        data.clear();
-        if (element < 0) {
-            element = -element;
-            sign = 1;
-        } else {
-            sign = 0;
-        }
-        
-        if (element == 0) {
-            data.push_back(0);
-            return;
-        }
-        
-        while (element > 0) {
-            data.push_back(element % BigInteger::base);
-            element /= BigInteger::base;
-        }
-    }
-    std::string toString () const;
+    // BigInteger to std::string
+    std::string toString() const;
     
 private:
+    // Class fields
+    std :: vector <unsigned char> data_;
+    SignType sign_;
     
-    std :: vector <unsigned char> data;
-    char sign;     // 0 - if positive
-                   // 1 - if negative
+    // Base number system
+    static const unsigned char Base = 10;
     
-    static const unsigned char base = 10;
-    
-    void delete_leading_zeros();
-    void check_for_zero();
+    // Secondary functions
+    void deleteLeadingZeros();
+    void checkForZero();
     void normalize();
-    void normalize(char);
-    void fromString (const std::string & str);
+    void normalize(SignType);
+    void fromString (const std::string &);
     
-    static BigInteger sum_and_sub (const BigInteger & first, const BigInteger & second, char result_sign, bool is_sum = true);
-    static BigInteger mult (const BigInteger & first, const BigInteger & second, char result_sign);
-    static BigInteger div_and_mod (const BigInteger & first, const BigInteger & second, char result_sign, bool is_div = true);
-    static char compare_by_abs (const BigInteger & first, const BigInteger & second);
+    static BigInteger& sumAndSub (BigInteger &, const BigInteger &, SignType, bool, bool = true);
+    static BigInteger mult (const BigInteger &, const BigInteger &, SignType);
+    static BigInteger divAndMod (const BigInteger &, const BigInteger &, SignType, bool = true);
+    static CompareType compareByAbs (const BigInteger &, const BigInteger &);
+    static CompareType compare (const BigInteger &, const BigInteger &);
 };
 
-
-void BigInteger::delete_leading_zeros()
+BigInteger::BigInteger()
 {
-    while (data.size() > 1 && data.back() == 0) {
-        data.pop_back();
+    data_.clear();
+    data_.push_back(0);
+    sign_ = POSITIVE;
+}
+
+BigInteger::BigInteger(int element)
+{
+    data_.clear();
+    if (element < 0) {
+        element = -element;
+        sign_ = NEGATIVE;
+    } else {
+        sign_ = POSITIVE;
+    }
+    
+    if (element == 0) {
+        data_.push_back(0);
+        return;
+    }
+    
+    while (element > 0) {
+        data_.push_back(element % BigInteger::Base);
+        element /= BigInteger::Base;
     }
 }
 
-void BigInteger::check_for_zero()
+
+void BigInteger::deleteLeadingZeros()
 {
-    if (data.size() == 1 && data[0] == 0) {
-        sign = 0;
+    while (data_.size() > 1 && data_.back() == 0) {
+        data_.pop_back();
+    }
+}
+
+void BigInteger::checkForZero()
+{
+    if (data_.size() == 1 && data_[0] == 0) {
+        sign_ = POSITIVE;
     }
 }
 
 void BigInteger::normalize()
 {
-    delete_leading_zeros();
-    check_for_zero();
+    deleteLeadingZeros();
+    checkForZero();
 }
 
-void BigInteger::normalize(char need_sign)
+void BigInteger::normalize(SignType need_sign_)
 {
-    delete_leading_zeros();
-    sign = need_sign;
-    check_for_zero();
+    deleteLeadingZeros();
+    sign_ = need_sign_;
+    checkForZero();
 }
 
 void BigInteger::fromString (const std::string & str)
@@ -136,77 +154,75 @@ void BigInteger::fromString (const std::string & str)
     if (str.size() == 0) {
         return;
     }
-    sign = (str[0] == '-' ? 1 : 0);
+    sign_ = (str[0] == '-' ? NEGATIVE : POSITIVE);
     
-    data.clear();
-    data.reserve(str.size());
+    data_.clear();
+    data_.reserve(str.size());
     
-    for (int i = static_cast<int>(str.size()) - 1, j = 0; i >= sign; i--, j++) {
-        data.push_back(str[i] - '0');
+    for (int i = static_cast<int>(str.size()) - 1, j = 0; i >= sign_; i--, j++) {
+        data_.push_back(str[i] - '0');
     }
     
     normalize();
 }
 
-BigInteger BigInteger::sum_and_sub (const BigInteger & first, const BigInteger & second, char result_sign, bool is_sum)
+BigInteger& BigInteger::sumAndSub (BigInteger & first, const BigInteger & second, SignType result_sign, bool is_sum, bool is_first_greater)
 {
-    BigInteger result;
-    size_t size = std::max(first.data.size(), second.data.size());
-    result.sign = result_sign;
-    result.data.clear();
-    result.data.reserve(size + 1);
-    
+    first.sign_ = result_sign;
     unsigned char carry = 0;
     
+    size_t size = std::max(first.data_.size(), second.data_.size()) + 1;
+    first.data_.resize(size, 0);
     
-    for (size_t i = 0; i < size; i++) {
-        unsigned char first_term = (i < first.data.size() ? first.data[i] : 0);
-        unsigned char second_term = (i < second.data.size() ? second.data[i] : 0);
+    size_t i;
+    for (i = 0; i < size; i++) {
+        unsigned char first_term = (i < first.data_.size() ? first.data_[i] : 0);
+        unsigned char second_term = (i < second.data_.size() ? second.data_[i] : 0);
         
-        result.data.push_back(is_sum ? first_term + second_term + carry : first_term - second_term - carry);
+        first.data_[i] = (is_sum ?
+                          first_term + second_term + carry :
+                          (is_first_greater ? first_term - second_term - carry : second_term - first_term - carry)
+                          );
         
-        if (result.data[i] >= BigInteger::base) {
-            result.data[i] += (is_sum ? -BigInteger::base : BigInteger::base);
+        if (first.data_[i] >= BigInteger::Base) {
+            first.data_[i] += (is_sum ? -BigInteger::Base : BigInteger::Base);
             carry = 1;
         } else {
             carry = 0;
         }
     }
+    
     if (carry && is_sum) {
-        result.data.push_back(carry);
+        first.data_[i] = carry;
     }
     
-    result.normalize();
+    first.normalize();
     
-    return result;
+    return first;
 }
 
-
-
-
-
-BigInteger BigInteger::mult (const BigInteger & first, const BigInteger & second, char result_sign)
+BigInteger BigInteger::mult (const BigInteger & first, const BigInteger & second, SignType result_sign_)
 {
     BigInteger result;
-    size_t size = first.data.size() * second.data.size();
-    result.sign = result_sign;
-    result.data.clear();
-    result.data.reserve(size + 1);
+    size_t size = first.data_.size() * second.data_.size();
+    result.sign_ = result_sign_;
+    result.data_.clear();
+    result.data_.reserve(size + 1);
     
     unsigned char carry = 0;
     
     for (size_t i = 0; i < size + 1; i++) {
-        result.data.push_back(carry);
+        result.data_.push_back(carry);
         carry = 0;
         for (size_t j = 0; j <= i; j++) {
-            unsigned char first_term = (j < first.data.size() ? first.data[j] : 0);
-            unsigned char second_term = (i - j < second.data.size() ? second.data[i - j] : 0);
+            unsigned char first_term = (j < first.data_.size() ? first.data_[j] : 0);
+            unsigned char second_term = (i - j < second.data_.size() ? second.data_[i - j] : 0);
             
-            result.data[i] += first_term * second_term;
+            result.data_[i] += first_term * second_term;
             
-            if (result.data[i] >= BigInteger::base) {
-                carry += result.data[i] / BigInteger::base;
-                result.data[i] %= BigInteger::base;
+            if (result.data_[i] >= BigInteger::Base) {
+                carry += result.data_[i] / BigInteger::Base;
+                result.data_[i] %= BigInteger::Base;
             }
         }
     }
@@ -216,10 +232,10 @@ BigInteger BigInteger::mult (const BigInteger & first, const BigInteger & second
     return result;
 }
 
-BigInteger BigInteger::div_and_mod (const BigInteger & first, const BigInteger & second, char result_sign, bool is_div)
+BigInteger BigInteger::divAndMod (const BigInteger & first, const BigInteger & second, SignType result_sign_, bool is_div)
 {
     if (second == 0) {
-        std::cerr << "Division by zero!";
+        std::cerr << "Devision by zero";
     }
     
     BigInteger result = 0;
@@ -230,13 +246,13 @@ BigInteger BigInteger::div_and_mod (const BigInteger & first, const BigInteger &
         degree = 1;
         
         while (num >= denom) {
-            denom *= BigInteger::base;
-            degree *= BigInteger::base;
+            denom *= BigInteger::Base;
+            degree *= BigInteger::Base;
         }
         
         if (degree > 0) {
-            denom.data.erase(denom.data.begin());
-            degree.data.erase(degree.data.begin());
+            denom.data_.erase(denom.data_.begin());
+            degree.data_.erase(degree.data_.begin());
         }
         
         while (num >= denom) {
@@ -248,65 +264,65 @@ BigInteger BigInteger::div_and_mod (const BigInteger & first, const BigInteger &
     }
     
     if (is_div) {
-        result.normalize(result_sign);
+        result.normalize(result_sign_);
         return result;
     } else {
-        num.normalize(first.sign);
+        num.normalize(first.sign_);
         return num;
     }
 }
 
-
-// 0 - if equal
-// -1 - if first < second
-// 1 - if first > seocnd
-char BigInteger::compare_by_abs (const BigInteger & first, const BigInteger & second)
+CompareType BigInteger::compareByAbs (const BigInteger & first, const BigInteger & second)
 {
-    if (first.data.size() < second.data.size()) {
-        return -1;
-    } else if (first.data.size() > second.data.size()) {
-        return 1;
+    if (first.data_.size() < second.data_.size()) {
+        return LOWER;
+    } else if (first.data_.size() > second.data_.size()) {
+        return GREATER;
     }
     
-    size_t comp_size = first.data.size();
+    size_t comp_size = first.data_.size();
     
     for (int i = static_cast<int>(comp_size) - 1; i >= 0; i--) {
-        if (first.data[i] < second.data[i]) {
-            return -1;
-        } else if (first.data[i] > second.data[i]) {
-            return 1;
+        if (first.data_[i] < second.data_[i]) {
+            return LOWER;
+        } else if (first.data_[i] > second.data_[i]) {
+            return GREATER;
         }
     }
     
-    return 0;
+    return EQUAL;
+}
+
+CompareType BigInteger::compare (const BigInteger & first, const BigInteger & second)
+{
+    if (first.sign_ > second.sign_) {
+        return LOWER;
+    } else if (first.sign_ < second.sign_) {
+        return GREATER;
+    }
+    
+    return (first.sign_ ? BigInteger::compareByAbs(second, first) : BigInteger::compareByAbs(first, second));
 }
 
 std::string BigInteger::toString () const
 {
     std::string result;
-    result.reserve(data.size() + 1);
+    result.reserve(data_.size() + 1);
     
-    if (sign == 1) {
+    if (sign_ == NEGATIVE) {
         result += '-';
     }
     
-    for (int i = static_cast<int>(data.size()) - 1; i >= 0; i--) {
-        result += data[i] + '0';
+    for (int i = static_cast<int>(data_.size()) - 1; i >= 0; i--) {
+        result += data_[i] + '0';
     }
     
     return result;
 }
  
-BigInteger abs (BigInteger element)
+BigInteger abs (const BigInteger & element)
 {
     return (element < 0 ? -element : element);
-}
-
-void swap (BigInteger & first, BigInteger & second)
-{
-    BigInteger t = first;
-    first = second;
-    second = t;
 }
 
 std::ostream & operator << (std::ostream & out, const BigInteger & number)
@@ -325,8 +341,8 @@ std::istream & operator >> (std::istream & in, BigInteger & number)
 
 BigInteger & BigInteger::operator = (const BigInteger & second)
 {
-    this -> data = second.data;
-    this -> sign = second.sign;
+    this -> data_ = second.data_;
+    this -> sign_ = second.sign_;
     return *this;
 }
 
@@ -337,163 +353,122 @@ BigInteger::operator bool()
 
 bool operator == (const BigInteger & first, const BigInteger & second)
 {
-    if (first.sign != second.sign) {
-        return false;
-    }
-    return BigInteger::compare_by_abs(first, second) == 0;
+    return BigInteger::compare(first, second) == EQUAL;
 }
 
 bool operator != (const BigInteger & first, const BigInteger & second)
 {
-    if (first.sign != second.sign) {
-        return true;
-    }
-    return BigInteger::compare_by_abs(first, second) != 0;
+    return BigInteger::compare(first, second) != EQUAL;
 }
 
 bool operator < (const BigInteger & first, const BigInteger & second)
 {
-    if (first.sign < second.sign) {
-        return false;
-    } else if (first.sign > second.sign) {
-        return true;
-    }
-    
-    if (first.sign == 0) {
-        return BigInteger::compare_by_abs(first, second) == -1;
-    } else {
-        return BigInteger::compare_by_abs(first, second) == 1;
-    }
+     return BigInteger::compare(first, second) == LOWER;
 }
 
 bool operator <= (const BigInteger & first, const BigInteger & second)
 {
-    if (first.sign < second.sign) {
-        return false;
-    } else if (first.sign > second.sign) {
-        return true;
-    }
-    
-    if (first.sign == 0) {
-        return BigInteger::compare_by_abs(first, second) <= 0;
-    } else {
-        return BigInteger::compare_by_abs(first, second) >= 0;
-    }
+    return BigInteger::compare(first, second) != GREATER;
 }
 
 bool operator > (const BigInteger & first, const BigInteger & second)
 {
-    if (first.sign > second.sign) {
-        return false;
-    } else if (first.sign < second.sign) {
-        return true;
-    }
-    
-    if (first.sign == 0) {
-        return BigInteger::compare_by_abs(first, second) == 1;
-    } else {
-        return BigInteger::compare_by_abs(first, second) == -1;
-    }
+    return BigInteger::compare(first, second) == GREATER;
 }
 
 bool operator >= (const BigInteger & first, const BigInteger & second)
 {
-    if (first.sign > second.sign) {
-        return false;
-    } else if (first.sign < second.sign) {
-        return true;
-    }
-    
-    if (first.sign == 0) {
-        return BigInteger::compare_by_abs(first, second) >= 0;
-    } else {
-        return BigInteger::compare_by_abs(first, second) <= 0;
-    }
+    return BigInteger::compare(first, second) != LOWER;
 }
 
 // Unary minus
 BigInteger operator - (const BigInteger & number)
 {
     BigInteger result = number;
-    result.sign = (result.sign == 1 || (result.data.size() == 1 && result.data[0] == 0) ? 0 : 1);
+    result.sign_ = (result.sign_ == NEGATIVE || (result.data_.size() == 1 && result.data_[0] == 0) ? POSITIVE : NEGATIVE);
     return result;
 }
 
+// Prefix increment
 BigInteger & operator ++ (BigInteger & element)
 {
-    return element = element + 1;
+    return element += 1;
 }
 
+// Postfix increment
 BigInteger operator ++ (BigInteger & element, int)
 {
     BigInteger old_value = element;
-    element = element + 1;
+    element += 1;
     return old_value;
 }
 
+// Prexif decrement
 BigInteger & operator -- (BigInteger & element)
 {
-    return element = element - 1;
+    return element -= 1;
 }
 
+// Postfix decrement
 BigInteger operator -- (BigInteger & element, int)
 {
     BigInteger old_value = element;
-    element = element - 1;
+    element -= 1;
     return old_value;
 }
 
-
-
 BigInteger operator + (const BigInteger & first, const BigInteger & second)
 {
-    if (first.sign == second.sign) {
-        return BigInteger::sum_and_sub(first, second, first.sign, true);
-    }
-    
-    if (BigInteger::compare_by_abs(first, second) >= 0) {
-        return BigInteger::sum_and_sub(first, second, first.sign, false);
-    } else {
-        return BigInteger::sum_and_sub(second, first, second.sign, false);
-    }
+    BigInteger result = first;
+    return result += second;
 }
 
 BigInteger operator - (const BigInteger & first, const BigInteger & second)
 {
-    if (first.sign != second.sign) {
-        return BigInteger::sum_and_sub(first, second, first.sign, true);
-    }
-    
-    if (BigInteger::compare_by_abs(first, second) >= 0) {
-        return BigInteger::sum_and_sub(first, second, first.sign, false);
-    } else {
-        return BigInteger::sum_and_sub(second, first, second.sign == 0 ? 1 : 0, false);
-    }
+    BigInteger result = first;
+    return result -= second;
 }
 
 BigInteger operator * (const BigInteger & first, const BigInteger & second)
 {
-    return BigInteger::mult(first, second, first.sign == second.sign ? 0 : 1);
+    return BigInteger::mult(first, second, first.sign_ == second.sign_ ? POSITIVE : NEGATIVE);
 }
 
 BigInteger operator / (const BigInteger & first, const BigInteger & second)
 {
-    return BigInteger::div_and_mod(first, second, first.sign == second.sign ? 0 : 1, true);
+    return BigInteger::divAndMod(first, second, first.sign_ == second.sign_ ? POSITIVE : NEGATIVE, true);
 }
 
 BigInteger operator % (const BigInteger & first, const BigInteger & second)
 {
-    return BigInteger::div_and_mod(first, second, false, false);
+    return BigInteger::divAndMod(first, second, POSITIVE, false);
 }
+
 
 BigInteger & operator += (BigInteger & first, const BigInteger & second)
 {
-    return first = first + second;
+    if (first.sign_ == second.sign_) {
+        return BigInteger::sumAndSub(first, second, first.sign_, true);
+    }
+    
+    if (BigInteger::compareByAbs(first, second) != LOWER) {
+        return BigInteger::sumAndSub(first, second, first.sign_, false);
+    } else {
+        return BigInteger::sumAndSub(first, second, second.sign_, false, false);
+    }
 }
 
 BigInteger & operator -= (BigInteger & first, const BigInteger & second)
 {
-    return first = first - second;
+    if (first.sign_ != second.sign_) {
+        return BigInteger::sumAndSub(first, second, first.sign_, true);
+    }
+    
+    if (BigInteger::compareByAbs(first, second) != LOWER) {
+        return BigInteger::sumAndSub(first, second, first.sign_, false);
+    } else {
+        return BigInteger::sumAndSub(first, second, second.sign_ == 0 ? NEGATIVE : POSITIVE, false, false);
+    }
 }
 
 BigInteger & operator *= (BigInteger & first, const BigInteger & second)
@@ -511,13 +486,26 @@ BigInteger & operator %= (BigInteger & first, const BigInteger & second)
     return first = first % second;
 }
 
-//
-//
+void swap (BigInteger & first, BigInteger & second)
+{
+    BigInteger t = first;
+    first = second;
+    second = t;
+}
+
+BigInteger gcd(BigInteger a, BigInteger b)
+{
+    while (b != 0) {
+        a %= b;
+        swap(a, b);
+    }
+    return a;
+}
+
+
 //
 //
 // RATIONAL NUMBERS
-//
-//
 //
 //
 
@@ -526,8 +514,12 @@ class Rational {
     
 public:
     
-//    friend int main();
+    // Constructors
+    Rational();
+    Rational(BigInteger);
+    Rational(int);
     
+    // Opertors overloading
     Rational & operator = (const Rational &);
     
     friend Rational operator - (const Rational &);
@@ -549,282 +541,254 @@ public:
     friend Rational & operator *= (Rational &, const Rational &);
     friend Rational & operator /= (Rational &, const Rational &);
     
-    
-    
+    // Rational to std::string
     std::string toString();
     std::string asDecimal(size_t);
     
-    Rational()
-    {
-        numerator = 0;
-        denominator = 1;
-        sign = 0;
-    }
-    
-    Rational(BigInteger number)
-    {
-        numerator = abs(number);
-        denominator = 1;
-        sign = number.sign;
-    }
-    
-    Rational(int number)
-    {
-        numerator = (number < 0 ? -number : number);
-        denominator = 1;
-        sign = (number < 0 ? 1 : 0);
-    }
-    
-    explicit operator double()
-    {
-        return std::stod(asDecimal(10000));
-    }
-    
+    // Rational to double
+    explicit operator double();
     
     
 private:
-    BigInteger numerator;
-    BigInteger denominator;
-    char sign;  // 0 - if positive
-                // 1 - if negative
     
-    BigInteger gcd(BigInteger a, BigInteger b);
+    // Class fields
+    BigInteger numerator_;
+    BigInteger denominator_;
+    SignType sign_;
+    
+    
+    // Secondary functions
     void normalize();
-    static char compare_by_abs(const Rational &, const Rational &);
-    static char compare(const Rational &, const Rational &);
-    static BigInteger sum(const Rational &, const Rational &);
-    
-    static Rational sum_and_sub (const Rational & first, const Rational & second, char result_sign, bool is_sum);
-    static Rational mult (const Rational & first, const Rational & second, char result_sign);
-    static Rational div (const Rational & first, const Rational & second, char result_sign);
+    void divisionForDecimal(std::string &, BigInteger &, BigInteger &, bool, size_t = 0);
+    static CompareType compareByAbs(const Rational &, const Rational &);
+    static CompareType compare(const Rational &, const Rational &);
+    static Rational sumAndSub (const Rational &, const Rational &, SignType, bool);
+    static Rational& multAndDiv (Rational &, const Rational &, SignType, bool = true);
 };
 
-BigInteger Rational::gcd(BigInteger a, BigInteger b)
+Rational::Rational()
 {
-    while (b != 0) {
-        a %= b;
-        swap(a, b);
-    }
-    return a;
+    numerator_ = 0;
+    denominator_ = 1;
+    sign_ = POSITIVE;
+}
+
+Rational::Rational(BigInteger number)
+{
+    numerator_ = abs(number);
+    denominator_ = 1;
+    sign_ = number.sign_;
+}
+
+Rational::Rational(int number)
+{
+    numerator_ = (number < 0 ? -number : number);
+    denominator_ = 1;
+    sign_ = (number < 0 ? NEGATIVE : POSITIVE);
+}
+
+Rational::operator double()
+{
+    return std::stod(asDecimal(10000));
 }
 
 void Rational::normalize()
 {
-    BigInteger GCD = gcd(numerator, denominator);
-    numerator /= GCD;
-    denominator /= GCD;
+    BigInteger GCD = gcd(numerator_, denominator_);
+    numerator_ /= GCD;
+    denominator_ /= GCD;
     
-    if (numerator == 0) {
-        sign = 0;
-        denominator = 1;
+    if (numerator_ == 0) {
+        sign_ = POSITIVE;
+        denominator_ = 1;
     }
 }
 
 std::string Rational::toString()
 {
-    return (sign == 0 ? "" : "-") + numerator.toString() + (denominator == 1 ? "" : "/" + denominator.toString());
+    return (sign_ == POSITIVE ? "" : "-") + numerator_.toString() + (denominator_ == 1 ? "" : "/" + denominator_.toString());
 }
 
-char Rational::compare_by_abs(const Rational & first, const Rational & second)
+CompareType Rational::compareByAbs(const Rational & first, const Rational & second)
 {
-    if (first.numerator == second.numerator && first.denominator == second.denominator) {
-        return 0;
+    if (first.numerator_ == second.numerator_ && first.denominator_ == second.denominator_) {
+        return EQUAL;
     }
-    BigInteger num1 = first.numerator;
-    BigInteger denom1 = first.denominator;
-    BigInteger num2 = second.numerator;
-    BigInteger denom2 = second.denominator;
-    num1 *= denom2;
-    num2 *= denom1;
-    return BigInteger::compare_by_abs(num1, num2);
+    return BigInteger::compareByAbs(first.numerator_ * second.denominator_, second.numerator_ * first.denominator_);
 }
 
-char Rational::compare(const Rational & first, const Rational & second)
+CompareType Rational::compare(const Rational & first, const Rational & second)
 {
-    if (first.sign != second.sign) {
-        return (first.sign == 1 ? -1 : 1);
+    if (first.sign_ != second.sign_) {
+        return (first.sign_ == NEGATIVE ? LOWER : GREATER);
     }
-    if (first.numerator == second.numerator && first.denominator == second.denominator) {
-        return 0;
+    if (first.numerator_ == second.numerator_ && first.denominator_ == second.denominator_) {
+        return EQUAL;
     }
-    return (first.sign == 0 ? compare_by_abs(first, second) : compare_by_abs(second, first));
+    return (first.sign_ == POSITIVE ? compareByAbs(first, second) : compareByAbs(second, first));
 }
 
-std::string Rational::asDecimal(size_t precision = 0)
+void Rational::divisionForDecimal(std::string & answer, BigInteger & num, BigInteger & denom, bool is_integer_part, size_t precision)
 {
+    BigInteger degree;
     BigInteger result = 0;
-    
-    BigInteger num = abs(numerator), denom = abs(denominator), degree;
-    
-    while (num >= denom) {
+
+    for (size_t i = 0; (is_integer_part ? num >= denom : i < precision) ; i++) {
         degree = 1;
-        
+
+        if (!is_integer_part) {
+            result = 0;
+            num *= BigInteger::Base;
+        }
+
         while (num >= denom) {
-            denom *= BigInteger::base;
-            degree *= BigInteger::base;
+            denom *= BigInteger::Base;
+            degree *= BigInteger::Base;
         }
-        
+
         if (degree > 1) {
-            denom.data.erase(denom.data.begin());
-            degree.data.erase(degree.data.begin());
+            denom.data_.erase(denom.data_.begin());
+            degree.data_.erase(degree.data_.begin());
         }
-        
+
         while (num >= denom) {
             num -= denom;
             result += degree;
         }
-        
-        denom = abs(denominator);
+
+        if (!is_integer_part) {
+            answer += result.toString();
+        }
+
+        denom = abs(denominator_);
     }
-    
-    result.normalize();
-    
-    std::string answer = (this -> sign == 0 ? "" : "-") + result.toString() + ".";
-    
-    for (size_t i = 0; i < precision; i++) {
-        degree = 1;
-        num *= BigInteger::base;
-        
-        while (num >= denom) {
-            denom *= BigInteger::base;
-            degree *= BigInteger::base;
-        }
-        
-        if (degree > 1) {
-            denom.data.erase(denom.data.begin());
-            degree.data.erase(degree.data.begin());
-        }
-        
-        BigInteger t = 0;
-        
-        while (num >= denom) {
-            num -= denom;
-            t += degree;
-        }
-        
-        answer += t.toString();
-        
-        denom = abs(denominator);
+
+    if (is_integer_part) {
+        result.normalize();
+        answer += result.toString();
     }
-    
+}
+
+std::string Rational::asDecimal(size_t precision = 0)
+{
+    BigInteger num = abs(numerator_);
+    BigInteger denom = abs(denominator_);
+
+    std::string answer = (this -> sign_ == POSITIVE ? "" : "-");
+
+    divisionForDecimal(answer, num, denom, true);
+
+    if (precision > 0) {
+        answer += '.';
+        divisionForDecimal(answer, num, denom, false, precision);
+    }
+
     return answer;
 }
 
-Rational Rational::sum_and_sub (const Rational & first, const Rational & second, char result_sign, bool is_sum)
+Rational Rational::sumAndSub (const Rational & first, const Rational & second, SignType result_sign, bool is_sum)
 {
     Rational result;
-    result.numerator = first.numerator * second.denominator + second.numerator * first.denominator * (is_sum ? 1 : -1);
-    result.denominator = first.denominator * second.denominator;
-    result.sign = result_sign;
+    result.numerator_ = first.numerator_ * second.denominator_ + second.numerator_ * first.denominator_ * (is_sum ? 1 : -1);
+    result.denominator_ = first.denominator_ * second.denominator_;
+    result.sign_ = result_sign;
     result.normalize();
     return result;
 }
 
-Rational Rational::mult (const Rational & first, const Rational & second, char result_sign)
+Rational& Rational::multAndDiv (Rational & first, const Rational & second, SignType result_sign, bool is_mult)
 {
-    Rational result;
-    result.numerator = first.numerator * second.numerator;
-    result.denominator = first.denominator * second.denominator;
-    result.sign = result_sign;
-    result.normalize();
-    return result;
-}
-
-Rational Rational::div (const Rational & first, const Rational & second, char result_sign)
-{
-    if (second == 0) {
+    if (!is_mult && second == 0) {
         std::cerr << "Division by zero!";
     }
-    Rational result;
-    result.numerator = first.numerator * second.denominator;
-    result.denominator = first.denominator * second.numerator;
-    result.sign = result_sign;
-    result.normalize();
-    return result;
+    first.numerator_ *= (is_mult ? second.numerator_ : second.denominator_);
+    first.denominator_ *= (is_mult ? second.denominator_ : second.numerator_);
+    first.sign_ = result_sign;
+    first.normalize();
+    return first;
 }
 
 Rational & Rational::operator = (const Rational & second)
 {
-    this -> numerator = second.numerator;
-    this -> denominator = second.denominator;
-    this -> sign = second.sign;
+    this -> numerator_ = second.numerator_;
+    this -> denominator_ = second.denominator_;
+    this -> sign_ = second.sign_;
     return *this;
 }
 
 bool operator == (const Rational & first, const Rational & second)
 {
-    return Rational::compare(first, second) == 0;
+    return Rational::compare(first, second) == EQUAL;
 }
 
 bool operator != (const Rational & first, const Rational & second)
 {
-    return Rational::compare(first, second) != 0;
+    return Rational::compare(first, second) != EQUAL;
 }
 
 bool operator > (const Rational & first, const Rational & second)
 {
-    return Rational::compare(first, second) > 0;
+    return Rational::compare(first, second) == GREATER;
 }
 
 bool operator >= (const Rational & first, const Rational & second)
 {
-    return Rational::compare(first, second) >= 0;
+    return Rational::compare(first, second) != LOWER;
 }
 
 bool operator < (const Rational & first, const Rational & second)
 {
-    return Rational::compare(first, second) < 0;
+    return Rational::compare(first, second) == LOWER;
 }
 
 bool operator <= (const Rational & first, const Rational & second)
 {
-    return Rational::compare(first, second) <= 0;
+    return Rational::compare(first, second) != GREATER;
 }
-
-
 
 Rational operator - (const Rational & element)
 {
     Rational result = element;
-    result.sign = (result.sign == 0 ? 1 : 0);
+    result.sign_ = (result.sign_ == POSITIVE ? NEGATIVE : POSITIVE);
     return result;
 }
 
 Rational operator + (const Rational & first, const Rational & second)
 {
-    if (first.sign == second.sign) {
-        return Rational::sum_and_sub(first, second, first.sign, true);
+    if (first.sign_ == second.sign_) {
+        return Rational::sumAndSub(first, second, first.sign_, true);
     }
     
-    if (Rational::compare_by_abs(first, second) >= 0) {
-        return Rational::sum_and_sub(first, second, first.sign, false);
+    if (Rational::compareByAbs(first, second) != LOWER) {
+        return Rational::sumAndSub(first, second, first.sign_, false);
     } else {
-        return Rational::sum_and_sub(second, first, second.sign, false);
+        return Rational::sumAndSub(second, first, second.sign_, false);
     }
 }
 
-
 Rational operator - (const Rational & first, const Rational & second)
 {
-    if (first.sign != second.sign) {
-        return Rational::sum_and_sub(first, second, first.sign, true);
+    if (first.sign_ != second.sign_) {
+        return Rational::sumAndSub(first, second, first.sign_, true);
     }
     
-    if (Rational::compare_by_abs(first, second) >= 0) {
-        return Rational::sum_and_sub(first, second, first.sign, false);
+    if (Rational::compareByAbs(first, second) != LOWER) {
+        return Rational::sumAndSub(first, second, first.sign_, false);
     } else {
-        return Rational::sum_and_sub(second, first, second.sign == 0 ? 1 : 0, false);
+        return Rational::sumAndSub(second, first, second.sign_ == POSITIVE ? NEGATIVE : POSITIVE, false);
     }
 }
 
 Rational operator * (const Rational & first, const Rational & second)
 {
-    return Rational::mult(first, second, first.sign == second.sign ? 0 : 1);
+    Rational result = first;
+    return result *= second;
 }
 
 Rational operator / (const Rational & first, const Rational & second)
 {
-    return Rational::div(first, second, first.sign == second.sign ? 0 : 1);
+    Rational result = first;
+    return result /= second;
 }
 
 Rational & operator += (Rational & first, const Rational & second)
@@ -839,12 +803,12 @@ Rational & operator -= (Rational & first, const Rational & second)
 
 Rational & operator *= (Rational & first, const Rational & second)
 {
-    return first = first * second;
+    return Rational::multAndDiv(first, second, first.sign_ == second.sign_ ? POSITIVE : NEGATIVE, true);
 }
 
 Rational & operator /= (Rational & first, const Rational & second)
 {
-    return first = first / second;
+    return Rational::multAndDiv(first, second, first.sign_ == second.sign_ ? POSITIVE : NEGATIVE, false);
 }
 
 
