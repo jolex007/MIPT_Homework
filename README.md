@@ -8,6 +8,9 @@ Here is a list of all the algorithms.
 - BigInteger
 - Rational numbers
 - Permutation
+- Binomial heap
+- Leftist heap
+- Skew heap
 
 ## ***Algorithms:***
 
