@@ -15,6 +15,7 @@
 #include "BinomialHeap.h"
 #include "LeftistHeap.h"
 #include "SkewHeap.h"
+#include "StlHeap.h"
 
 
 template <typename T = int, typename Comp = std::less<T>, typename HeapType = LeftistHeap<T, Comp>>
@@ -74,13 +75,9 @@ void test_heap(int num) {
 
 int main() {
     
-    test_heap<int, std::less<int>, SkewHeap<int, std::less<int>>>(20);
-//    BinomialHeap<> heap1;
-//    heap1.Insert(1);
-//    heap1.Insert(2);
-//    heap1.Insert(3);
-//
-//    BinomialHeap<> heap2 = heap1;
+    test_heap<int, std::less<int>, StlHeap<int, std::less<int>>>(20);
+    
+    
     
     
     
