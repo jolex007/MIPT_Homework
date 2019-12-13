@@ -16,6 +16,8 @@
 #include "LeftistHeap.h"
 #include "SkewHeap.h"
 #include "StlHeap.h"
+#include "Testing.h"
+#include "gtest/gtest.h"
 
 
 template <typename T = int, typename Comp = std::less<T>, typename HeapType = LeftistHeap<T, Comp>>
@@ -73,13 +75,11 @@ void test_heap(int num) {
      std::cerr << "OK" << std::endl;
 }
 
-int main() {
+int main(int argc, char ** argv) {
     
-    test_heap<int, std::less<int>, StlHeap<int, std::less<int>>>(20);
+    // test_heap<int, std::less<int>, StlHeap<int, std::less<int>>>(20);
     
-    
-    
-    
-    
-    return 0;
+    testing::InitGoogleTest(&argc, argv);
+
+    return RUN_ALL_TESTS();
 }

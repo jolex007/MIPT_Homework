@@ -61,12 +61,18 @@ void StlHeap<T, Compare>::Insert(const T& key)
 template <typename T, typename Compare>
 T StlHeap<T, Compare>::GetMin() const
 {
+    if (_heap.empty()) {
+        throw std::range_error("No elements in Heap");
+    }
     return (*_heap.begin());
 }
 
 template <typename T, typename Compare>
 T StlHeap<T, Compare>::ExtractMin()
 {
+    if (_heap.empty()) {
+        throw std::range_error("No elements in Heap");
+    }
     T result = (*_heap.begin());
     _heap.erase(_heap.begin());
     return result;
