@@ -9,6 +9,8 @@
 #ifndef SkewHeap_h
 #define SkewHeap_h
 
+#include <iostream>
+#include <algorithm>
 #include "IHeap.h"
 
 template <typename T = int, typename Compare = std::less<T>>

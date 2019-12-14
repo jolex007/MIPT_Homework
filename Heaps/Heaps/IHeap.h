@@ -9,6 +9,9 @@
 #ifndef Header_h
 #define Header_h
 
+#include <iostream>
+#include <algorithm>
+
 template <typename T = int, typename Compare = std::less<T>>
 class IHeap {
     

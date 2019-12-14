@@ -1,3 +1,5 @@
+#include <iostream>
+#include <algorithm>
 #include "Testing.h"
 
 using Heaps = testing::Types<BinomialHeap<KeyType, HeapCompare>, LeftistHeap<KeyType, HeapCompare>, SkewHeap<KeyType, HeapCompare> >;
@@ -17,10 +19,11 @@ TYPED_TEST(HeapTesting, AddHeapTest)
 
 TYPED_TEST(HeapTesting, Insert)
 {
+    const size_t numberOfTests = 1000;
+
     HeapTesting<TypeParam>::AddHeap(0);
     HeapTesting<TypeParam>::AddHeapStl(0);
 
-    const size_t numberOfTests = 1000;
     for (size_t i = 0; i < numberOfTests; i++) {
         KeyType key = rand();
 

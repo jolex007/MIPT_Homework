@@ -9,6 +9,8 @@
 #ifndef Testing_h
 #define Testing_h
 
+#include <iostream>
+#include <algorithm>
 #include "gtest/gtest.h"
 #include "BinomialHeap.h"
 #include "LeftistHeap.h"
@@ -61,7 +63,8 @@ void HeapTesting<T>::SetUp()
 template <typename T>
 void HeapTesting<T>::TearDown()
 {
-    
+    _heap.clear();
+    _stlHeap.clear();
 }
 
 template <typename T>

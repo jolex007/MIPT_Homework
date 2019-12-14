@@ -9,7 +9,10 @@
 #ifndef StlHeap_h
 #define StlHeap_h
 
+#include <iostream>
+#include <algorithm>
 #include <set>
+#include "IHeap.h"
 
 template <typename T = int, typename Compare = std::less<T>>
 class StlHeap : public IHeap<T, Compare>

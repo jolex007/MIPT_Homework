@@ -307,28 +307,56 @@ acxx_demangle.h
 -
 
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/BinomialHeap.h
+iostream
+-
+algorithm
+-
 IHeap.h
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/IHeap.h
 
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/IHeap.h
+iostream
+-
+algorithm
+-
 
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/LeftistHeap.h
+iostream
+-
 IHeap.h
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/IHeap.h
 
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/SkewHeap.h
+iostream
+-
+algorithm
+-
 IHeap.h
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/IHeap.h
 
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/StlHeap.h
+iostream
+-
+algorithm
+-
 set
 -
+IHeap.h
+/Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/IHeap.h
 
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/Testing.cpp
+iostream
+-
+algorithm
+-
 Testing.h
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/Testing.h
 
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/Testing.h
+iostream
+-
+algorithm
+-
 gtest/gtest.h
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/gtest/gtest.h
 BinomialHeap.h
@@ -341,18 +369,6 @@ StlHeap.h
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/StlHeap.h
 
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/main.cpp
-iostream
--
-vector
--
-chrono
--
-random
--
-set
--
-algorithm
--
 BinomialHeap.h
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/BinomialHeap.h
 LeftistHeap.h

@@ -9,6 +9,7 @@
 #ifndef LeftistHeap_h
 #define LeftistHeap_h
 
+#include <iostream>
 #include "IHeap.h"
 
 template <typename T = int, typename Compare = std::less<T>>
