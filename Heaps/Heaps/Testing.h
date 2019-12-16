@@ -11,6 +11,8 @@
 
 #include <iostream>
 #include <algorithm>
+#include <time.h>
+#include <chrono>
 #include "gtest/gtest.h"
 #include "BinomialHeap.h"
 #include "LeftistHeap.h"
@@ -48,6 +50,7 @@ protected:
     void MeldStl(size_t index1, size_t index2);
 
 public:
+    unsigned int summaryTime = 0;
 
     std::vector <T> _heap;
     std::vector <StlHeap<KeyType, HeapCompare>> _stlHeap;
@@ -58,6 +61,7 @@ void HeapTesting<T>::SetUp()
 {
     _heap.clear();
     _stlHeap.clear();
+    summaryTime = 0;
 }
 
 template <typename T>
@@ -65,6 +69,9 @@ void HeapTesting<T>::TearDown()
 {
     _heap.clear();
     _stlHeap.clear();
+    if (summaryTime != 0) {
+        std::cout << summaryTime << " - time of " << typeid(T).name() << "\n";
+    }
 }
 
 template <typename T>

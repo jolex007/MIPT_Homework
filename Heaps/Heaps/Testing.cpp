@@ -97,6 +97,8 @@ TYPED_TEST(HeapTesting, AllTesting)
     HeapTesting<TypeParam>::_heap.emplace_back();
     HeapTesting<TypeParam>::_stlHeap.emplace_back();
 
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+
     for (size_t i = 0; i < numberOfTests; i++) {
         int operationType = rand() % 5;
 
@@ -112,7 +114,10 @@ TYPED_TEST(HeapTesting, AllTesting)
 
             key = rand();
 
+            start = std::chrono::system_clock::now();
             ASSERT_NO_THROW(HeapTesting<TypeParam>::AddHeap(key));
+            end = std::chrono::system_clock::now();
+
             ASSERT_NO_THROW(HeapTesting<TypeParam>::AddHeapStl(key));
         break;
 
@@ -121,7 +126,10 @@ TYPED_TEST(HeapTesting, AllTesting)
             key = rand();
             index = rand() % HeapTesting<TypeParam>::_heap.size();
 
+            start = std::chrono::system_clock::now();
             ASSERT_NO_THROW(HeapTesting<TypeParam>::Insert(index, key));
+            end = std::chrono::system_clock::now();
+
             ASSERT_NO_THROW(HeapTesting<TypeParam>::InsertStl(index, key));
         break;
 
@@ -136,11 +144,13 @@ TYPED_TEST(HeapTesting, AllTesting)
             } catch (...) {
                 flag = false;
             }
+            start = std::chrono::system_clock::now();
             if (flag) {
                 ASSERT_EQ(HeapTesting<TypeParam>::GetMin(index), key);
             } else {
                 ASSERT_ANY_THROW(HeapTesting<TypeParam>::GetMin(index));
             }
+            end = std::chrono::system_clock::now();
         break;
 
         case 3: // ExtractMin
@@ -155,11 +165,13 @@ TYPED_TEST(HeapTesting, AllTesting)
                 flag = false;
             }
 
+            start = std::chrono::system_clock::now();
             if (flag) {
                 ASSERT_EQ(HeapTesting<TypeParam>::ExtractMin(index), key);
             } else {
                 ASSERT_ANY_THROW(HeapTesting<TypeParam>::ExtractMin(index));
             }
+            end = std::chrono::system_clock::now();
 
         break;
 
@@ -174,11 +186,14 @@ TYPED_TEST(HeapTesting, AllTesting)
             while (index2 == index1) {
                 index2 = rand() % HeapTesting<TypeParam>::_heap.size();
             }
-
+            start = std::chrono::system_clock::now();
             ASSERT_NO_THROW(HeapTesting<TypeParam>::Meld(index1, index2));
+            end = std::chrono::system_clock::now();
+
             ASSERT_NO_THROW(HeapTesting<TypeParam>::MeldStl(index1, index2));
         break;
         }
-    }
 
+        HeapTesting<TypeParam>::summaryTime += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    }
 }

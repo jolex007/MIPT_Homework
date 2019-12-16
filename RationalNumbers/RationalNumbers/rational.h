@@ -589,7 +589,7 @@ Rational::Rational(int number)
 
 Rational::operator double()
 {
-    return std::stod(asDecimal(10000));
+    return std::stod(asDecimal(1000));
 }
 
 void Rational::normalize()
@@ -813,3 +813,5 @@ Rational & operator /= (Rational & first, const Rational & second)
 
 
 #endif /* rational_h */
+
+
