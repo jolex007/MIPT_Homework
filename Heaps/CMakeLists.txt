@@ -4,7 +4,7 @@ project(Heaps)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -lgtest")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 find_package(GTest REQUIRED)
 
 # include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})

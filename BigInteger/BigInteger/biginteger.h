@@ -229,7 +229,7 @@ BigInteger& BigInteger::_mult (BigInteger & first, const BigInteger & second, Bi
 BigInteger& BigInteger::_div_and_mod (BigInteger & first, const BigInteger & second, BigInteger::_SignType result_sign_, bool is_div)
 {
     if (second == 0) {
-        std::cerr << "Devision by zero";
+        std::cerr << "Division by zero";
     }
     
     BigInteger result = 0;

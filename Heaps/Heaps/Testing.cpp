@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <fstream>
 #include "Testing.h"
 
 using Heaps = testing::Types<BinomialHeap<KeyType, HeapCompare>, LeftistHeap<KeyType, HeapCompare>, SkewHeap<KeyType, HeapCompare> >;
@@ -92,7 +93,11 @@ TYPED_TEST(HeapTesting, Meld)
 
 TYPED_TEST(HeapTesting, AllTesting)
 {
-    const size_t numberOfTests = 1000;
+    std::ifstream fin;
+    fin.open("/Users/jolex007/Documents/programming/MIPT/Practice/Heaps/tests/test.txt");
+
+    size_t numberOfTests;
+    fin >> numberOfTests;
 
     HeapTesting<TypeParam>::_heap.emplace_back();
     HeapTesting<TypeParam>::_stlHeap.emplace_back();
@@ -100,7 +105,10 @@ TYPED_TEST(HeapTesting, AllTesting)
     std::chrono::time_point<std::chrono::system_clock> start, end;
 
     for (size_t i = 0; i < numberOfTests; i++) {
-        int operationType = rand() % 5;
+        int operationType;
+        fin >> operationType;
+
+        HeapTesting<TypeParam>::typeOfTests[operationType]++;
 
         KeyType key;
         size_t index;
@@ -196,4 +204,21 @@ TYPED_TEST(HeapTesting, AllTesting)
 
         HeapTesting<TypeParam>::summaryTime += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     }
+    
+    fin.close();
+}
+
+
+void CreateTests(const size_t numberOfTests)
+{
+    std::ofstream fout;
+    fout.open("/Users/jolex007/Documents/programming/MIPT/Practice/Heaps/tests/test.txt");
+
+    fout << numberOfTests << "\n";
+
+    for (size_t i = 0; i < numberOfTests; i++) {
+        fout << rand() % 5 << " ";
+    }
+
+    fout.close();
 }

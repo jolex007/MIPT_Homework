@@ -51,6 +51,7 @@ protected:
 
 public:
     unsigned int summaryTime = 0;
+    std::vector <int> typeOfTests;
 
     std::vector <T> _heap;
     std::vector <StlHeap<KeyType, HeapCompare>> _stlHeap;
@@ -62,6 +63,7 @@ void HeapTesting<T>::SetUp()
     _heap.clear();
     _stlHeap.clear();
     summaryTime = 0;
+    typeOfTests.resize(5, 0);
 }
 
 template <typename T>
@@ -70,7 +72,13 @@ void HeapTesting<T>::TearDown()
     _heap.clear();
     _stlHeap.clear();
     if (summaryTime != 0) {
-        std::cout << summaryTime << " - time of " << typeid(T).name() << "\n";
+        std::cout << summaryTime << " - time of " << typeid(T).name() << "\n\n";
+        std::cout << "Where:\n";
+        std::cout << typeOfTests[0] << " - number of \"AddHeap\" tests\n";
+        std::cout << typeOfTests[1] << " - number of \"Insert\" tests\n";
+        std::cout << typeOfTests[2] << " - number of \"GetMin\" tests\n";
+        std::cout << typeOfTests[3] << " - number of \"ExtractMin\" tests\n";
+        std::cout << typeOfTests[4] << " - number of \"Meld\" tests\n";
     }
 }
 
@@ -138,5 +146,7 @@ void HeapTesting<T>::MeldStl(size_t index1, size_t index2)
 
 
 } // end of namespace
+
+void CreateTests(const size_t);
 
 #endif /* Testing_h */

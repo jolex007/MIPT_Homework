@@ -11,166 +11,98 @@
 
 #include <iostream>
 #include "IHeap.h"
+#include "SkewHeap.h"
 
-template <typename T = int, typename Compare = std::less<T>>
-class LeftistHeap : public IHeap<T, Compare> {
+template <typename T = int, typename Compare = std::less<T> >
+class LeftistHeap : public SkewHeap<T, Compare>
+{
+
+protected:
+
+    class _HeapNode : public SkewHeap<T, Compare>::_HeapNode
+    {
+    public:
+    // Struct fields
+
+        size_t _rank_;
+
+    // Constructors and Destructor
+
+        _HeapNode();
+
+        _HeapNode(const T&);
+
+        ~_HeapNode() = default;
+    };
+
+    // static void _ClearTree(_HeapNode* &);
+
+    static void _CopyTree(typename SkewHeap<T, Compare>::_HeapNode* &, const typename SkewHeap<T, Compare>::_HeapNode*);
+
+    static size_t _GetRank(typename SkewHeap<T, Compare>::_HeapNode*);
     
-private:
-    
-// Private functions and classes
-    
-    class _HeapNode;
-    
-    using _HeapNodePtr = _HeapNode*;
-    
-    static std::function <bool(const T&, const T&)> _Compare;
-    
-    static _HeapNodePtr _Merge(_HeapNodePtr, _HeapNodePtr);
-    
+    static void _Update(typename SkewHeap<T, Compare>::_HeapNode* ptr);
+
+    static typename SkewHeap<T, Compare>::_HeapNode* _Merge(typename SkewHeap<T, Compare>::_HeapNode*, typename SkewHeap<T, Compare>::_HeapNode*);
+
     static void _Merge(LeftistHeap&, LeftistHeap&);
-    
-    static size_t _GetRank(_HeapNodePtr);
-    
-    static void _Update(_HeapNodePtr);
-    
-    static void _CopyTree(_HeapNodePtr&, const _HeapNodePtr&);
-    
-    static void _ClearTree(_HeapNodePtr&);
-    
-// Struct fields
-    
-    _HeapNodePtr _root; // Root of Tree
-    size_t _size;       // Size of Tree
-    
+
 public:
-    
-// Public methods
-    
+
     LeftistHeap();
     LeftistHeap(const T&);
     LeftistHeap(const LeftistHeap&);
     
-    ~LeftistHeap() override;
-    
-    void Insert(const T&) override;
-    
-    T GetMin() const override;
+
+    LeftistHeap& operator = (const LeftistHeap&);
 
     T ExtractMin() override;
     
     void Meld(IHeap<T, Compare>&) override;
-    
-    bool Empty() const override;
-    
-    size_t Size() const override;
-    
-    LeftistHeap& operator = (const LeftistHeap&);
+
+    void Insert(const T&) override;
 };
 
 template <typename T, typename Compare>
-class LeftistHeap<T, Compare>::_HeapNode {
-public:
-    
-// Struct fields
-    
-    T _key_;                // Key
-    _HeapNodePtr _left_;    // Left son
-    _HeapNodePtr _right_;   // Right son
-    size_t _rank_;          // Rank of vertex
-    
-// Constructors and Destructor
-    
-    _HeapNode();
-    
-    _HeapNode(const T&);
-    
-    ~_HeapNode() = default;
-};
-
-//
-// Constructors and Desctuctors
-//
+LeftistHeap<T, Compare>::_HeapNode::_HeapNode() : SkewHeap<T, Compare>::_HeapNode(), _rank_(1) {}
 
 template <typename T, typename Compare>
-LeftistHeap<T, Compare>::_HeapNode::_HeapNode() : _left_(nullptr), _right_(nullptr), _rank_(1) {}
-
-
-template <typename T, typename Compare>
-LeftistHeap<T, Compare>::_HeapNode::_HeapNode(const T& key) : _key_(key), _left_(nullptr), _right_(nullptr), _rank_(1) {}
+LeftistHeap<T, Compare>::_HeapNode::_HeapNode(const T& key) : SkewHeap<T, Compare>::_HeapNode(key), _rank_(1) {}
 
 template <typename T, typename Compare>
-LeftistHeap<T, Compare>::LeftistHeap() : _root(nullptr), _size(0) {}
+LeftistHeap<T, Compare>::LeftistHeap() : SkewHeap<T, Compare>::SkewHeap() {}
 
 template <typename T, typename Compare>
-LeftistHeap<T, Compare>::LeftistHeap(const T& element) : _root(new _HeapNode(element)), _size(1) {}
-
-template <typename T, typename Compare>
-LeftistHeap<T, Compare>::LeftistHeap(const LeftistHeap& rhs) : _root(nullptr), _size(0)
+LeftistHeap<T, Compare>::LeftistHeap(const T& element) : SkewHeap<T, Compare>::SkewHeap(element)
 {
+    this->_root = dynamic_cast<typename SkewHeap<T, Compare>::_HeapNode*> (new LeftistHeap<T, Compare>::_HeapNode(element));
+}
+
+template <typename T, typename Compare>
+LeftistHeap<T, Compare>::LeftistHeap(const LeftistHeap& rhs)
+{
+    this->_root = nullptr;
     (*this) = rhs;
 }
 
 template <typename T, typename Compare>
-LeftistHeap<T, Compare>::~LeftistHeap()
+size_t LeftistHeap<T, Compare>::_GetRank(typename SkewHeap<T, Compare>::_HeapNode* ptr)
 {
-    _ClearTree(_root);
-    _size = 0;
-}
-
-
-//
-// Private functions and methods
-//
-
-template <typename T, typename Compare>
-size_t LeftistHeap<T, Compare>::_GetRank(_HeapNodePtr ptr)
-{
-    return ptr ? ptr->_rank_ : 0;
+    return ptr ? dynamic_cast<typename LeftistHeap<T, Compare>::_HeapNode*> (ptr)->_rank_ : 0;
 }
 
 template <typename T, typename Compare>
-void LeftistHeap<T, Compare>::_Update(_HeapNodePtr ptr)
+void LeftistHeap<T, Compare>::_Update(typename SkewHeap<T, Compare>::_HeapNode* ptr)
 {
     if (!ptr) { return; }
     
-    ptr->_rank_ = std::min(_GetRank(ptr->_left_), _GetRank(ptr->_right_), _Compare) + 1;
+    dynamic_cast<typename LeftistHeap<T, Compare>::_HeapNode*> (ptr)->_rank_ = std::min(_GetRank(ptr->_left_),
+                                                                                        _GetRank(ptr->_right_), 
+                                                                                        SkewHeap<T, Compare>::_Compare) + 1;
 }
 
 template <typename T, typename Compare>
-void LeftistHeap<T, Compare>::_CopyTree(_HeapNodePtr & lhs, const _HeapNodePtr & rhs)
-{
-    if (rhs == nullptr) {
-        lhs = nullptr;
-        return;
-    }
-    
-    lhs = new _HeapNode(rhs->_key_);
-    
-    _CopyTree(lhs->_left_, rhs->_left_);
-    _CopyTree(lhs->_right_, rhs->_right_);
-}
-
-template <typename T, typename Compare>
-void LeftistHeap<T, Compare>::_ClearTree(_HeapNodePtr & ptr)
-{
-    if (ptr == nullptr) {
-        return;
-    }
-    
-    _ClearTree(ptr->_left_);
-    _ClearTree(ptr->_right_);
-    
-    delete ptr;
-    
-    ptr = nullptr;
-}
-
-template <typename T, typename Compare>
-std::function<bool(const T&, const T&)> LeftistHeap<T, Compare>::_Compare = Compare();
-
-
-template <typename T, typename Compare>
-typename LeftistHeap<T, Compare>::_HeapNodePtr LeftistHeap<T, Compare>::_Merge(_HeapNodePtr lhs, _HeapNodePtr rhs)
+typename SkewHeap<T, Compare>::_HeapNode* LeftistHeap<T, Compare>::_Merge(typename SkewHeap<T, Compare>::_HeapNode* lhs, typename SkewHeap<T, Compare>::_HeapNode* rhs)
 {
     if (!lhs) {
         return rhs;
@@ -178,7 +110,7 @@ typename LeftistHeap<T, Compare>::_HeapNodePtr LeftistHeap<T, Compare>::_Merge(_
         return lhs;
     }
     
-    if (_Compare(lhs->_key_, rhs->_key_)) {
+    if (SkewHeap<T, Compare>::_Compare(lhs->_key_, rhs->_key_)) {
         lhs->_right_ = _Merge(lhs->_right_, rhs);
         _Update(lhs);
         
@@ -200,29 +132,18 @@ typename LeftistHeap<T, Compare>::_HeapNodePtr LeftistHeap<T, Compare>::_Merge(_
 }
 
 template <typename T, typename Compare>
-void LeftistHeap<T, Compare>::_Merge(LeftistHeap& lhs, LeftistHeap& rhs)
+void LeftistHeap<T, Compare>::_CopyTree(typename SkewHeap<T, Compare>::_HeapNode* & lhs, const typename SkewHeap<T, Compare>::_HeapNode* rhs)
 {
-    lhs._root = _Merge(lhs._root, rhs._root);
-    lhs._size += rhs._size;
-    rhs._root = nullptr;
+    if (rhs == nullptr) {
+        lhs = nullptr;
+        return;
+    }
+    
+    lhs = dynamic_cast<typename SkewHeap<T, Compare>::_HeapNode*> (new LeftistHeap<T, Compare>::_HeapNode(rhs->_key_));
+    
+    LeftistHeap<T, Compare>::_CopyTree(lhs->_left_, rhs->_left_);
+    LeftistHeap<T, Compare>::_CopyTree(lhs->_right_, rhs->_right_);
 }
-
-template <typename T, typename Compare>
-size_t LeftistHeap<T, Compare>::Size() const
-{
-    return _size;
-}
-
-template <typename T, typename Compare>
-bool LeftistHeap<T, Compare>::Empty() const
-{
-    return _size == 0;
-}
-
-
-//
-// Public functions and methods
-//
 
 template <typename T, typename Compare>
 LeftistHeap<T, Compare>& LeftistHeap<T, Compare>::operator = (const LeftistHeap<T, Compare>& rhs)
@@ -231,32 +152,29 @@ LeftistHeap<T, Compare>& LeftistHeap<T, Compare>::operator = (const LeftistHeap<
         return (*this);
     }
     
-    _ClearTree(_root);
-    _size = rhs.Size();
-    _CopyTree(_root, rhs._root);
-    
+    this->_ClearTree(this->_root);
+    this->_size = rhs.Size();
+    LeftistHeap<T, Compare>::_CopyTree(this->_root, rhs._root);
     return (*this);
 }
 
-
 template <typename T, typename Compare>
-T LeftistHeap<T, Compare>::GetMin() const
+void LeftistHeap<T, Compare>::_Merge(LeftistHeap& lhs, LeftistHeap& rhs)
 {
-    if (!_root) {
-        throw std::range_error("No elements in Heap");
-    }
-    return _root->_key_;
+    lhs._root = _Merge(lhs._root, rhs._root);
+    lhs._size += rhs._size;
+    rhs._root = nullptr;
 }
 
 template <typename T, typename Compare>
 T LeftistHeap<T, Compare>::ExtractMin()
 {
-    if (!_root) {
+    if (!this->_root) {
         throw std::range_error("No elements in Heap");
     }
-    _HeapNodePtr result = _root;
+    typename SkewHeap<T, Compare>::_HeapNode* result = this->_root;
     
-    _root = _Merge(_root->_left_, _root->_right_);
+    this->_root = _Merge(this->_root->_left_, this->_root->_right_);
     T answer = result->_key_;
     
     delete result;
@@ -280,6 +198,5 @@ void LeftistHeap<T, Compare>::Insert(const T& element)
     LeftistHeap<T, Compare> rhs(element);
     _Merge((*this), rhs);
 }
-
 
 #endif /* LeftistHeap_h */

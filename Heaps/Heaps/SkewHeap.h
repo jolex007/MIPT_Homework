@@ -16,7 +16,7 @@
 template <typename T = int, typename Compare = std::less<T>>
 class SkewHeap : public IHeap<T, Compare> {
     
-private:
+protected:
     
 // Private functions and classes
     
@@ -47,19 +47,19 @@ public:
     SkewHeap(const T&);
     SkewHeap(const SkewHeap&);
     
-    ~SkewHeap() override;
+    virtual ~SkewHeap() override;
     
-    void Insert(const T&) override;
+    virtual void Insert(const T&) override;
     
-    T GetMin() const override;
+    virtual T GetMin() const override;
 
-    T ExtractMin() override;
+    virtual T ExtractMin() override;
     
-    void Meld(IHeap<T, Compare>&) override;
+    virtual void Meld(IHeap<T, Compare>&) override;
     
-    bool Empty() const override;
+    virtual bool Empty() const override;
     
-    size_t Size() const override;
+    virtual size_t Size() const override;
     
     SkewHeap& operator = (const SkewHeap&);
 };
@@ -80,7 +80,7 @@ public:
     
     _HeapNode(const T&);
     
-    ~_HeapNode() = default;
+    virtual ~_HeapNode() = default;
 };
 
 //

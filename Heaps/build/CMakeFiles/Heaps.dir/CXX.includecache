@@ -325,6 +325,8 @@ iostream
 -
 IHeap.h
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/IHeap.h
+SkewHeap.h
+/Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/SkewHeap.h
 
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/SkewHeap.h
 iostream
@@ -348,6 +350,8 @@ IHeap.h
 iostream
 -
 algorithm
+-
+fstream
 -
 Testing.h
 /Users/jolex007/Documents/programming/MIPT/Practice/Heaps/Heaps/Testing.h

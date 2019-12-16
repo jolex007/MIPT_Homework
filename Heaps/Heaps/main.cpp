@@ -14,7 +14,9 @@
 #include "gtest/gtest.h"
 
 int main(int argc, char ** argv) {
-    
+
+    CreateTests(1000);
+
     testing::InitGoogleTest(&argc, argv);
 
     return RUN_ALL_TESTS();
