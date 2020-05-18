@@ -1,5 +1,7 @@
 #include <iostream>
 #include <limits.h>
+#include <functional>
+
 
 struct SplayTree
 {
@@ -8,6 +10,7 @@ private:
     
     Node* _root;
     
+    void _Rotate(Node*, bool is_left);
     void _RightRotate(Node*);
     void _LeftRotate(Node*);
     void _Splay(Node*);
@@ -15,12 +18,17 @@ private:
     Node* _FindVertex(Node*, size_t);
     Node* _Merge(Node*, Node*);
     std::pair<Node*, Node*> _Split(Node*, size_t);
+    void _PermutationOnSubsegment(Node*&, bool);
+    void _SubsegmentOperation(size_t, size_t);
+    
+    template <typename T>
+    T _SubsegmentOperation(size_t begin, size_t end, std::function<T(Node*&)> func);
     
     inline void _ZigMove(Node*);
     inline void _ZigZigMove(Node*);
     inline void _ZigZagMove(Node*);
     
-    static void DFS(Node*);
+    static void DFS(Node*, std::ostream&);
     static void DeleteTree(Node*);
     
 public:
@@ -35,7 +43,7 @@ public:
     void NextPermutationOnSubsegment(size_t, size_t);
     void PrevPermutationOnSubsegment(size_t, size_t);
     
-    void PrintTree();
+    void PrintTree(std::ostream&);
 };
 
 struct SplayTree::Node
@@ -82,21 +90,18 @@ struct SplayTree::Node
                         _LeftVertex(rhs._LeftVertex), _RightVertex(rhs._RightVertex) {}
     ~Node() = default;
     
-    void SetRight(Node*);
-    void SetLeft(Node*);
+    enum Side {
+        Left,
+        Right
+    };
+    
+    void SetChild(Node*, Side);
     
     static void Update(Node*);
     static void Push(Node*);
-    static size_t Size(Node*);
-    static long long GetMin(Node*);
-    static long long GetMax(Node*);
-    static long long GetSumm(Node*);
-    static long long GetLeftVertex(Node*);
-    static long long GetRightVertex(Node*);
-    static size_t GetLowerSuffix(Node*);
-    static size_t GetUpperSuffix(Node*);
-    static size_t GetLowerPrefix(Node*);
-    static size_t GetUpperPrefix(Node*);
+    
+    template <typename V>
+    static V GetField(Node*, V Node::*, V default_value);
     
     static void SetFlag_SetElem(Node*, const long long&);
     static void SetFlag_AddElem(Node*, const long long&);
@@ -120,7 +125,7 @@ void SplayTree::DeleteTree(Node* vertex)
     delete vertex;
 }
 
-void SplayTree::DFS(Node* vertex)
+void SplayTree::DFS(Node* vertex, std::ostream& fout)
 {
     if (vertex == nullptr) {
         return;
@@ -129,24 +134,20 @@ void SplayTree::DFS(Node* vertex)
     Node::Push(vertex);
     Node::Update(vertex);
     
-    DFS(vertex->left);
-    std::cout << vertex->data << " ";
-    DFS(vertex->right);
+    DFS(vertex->left, fout);
+    fout << vertex->data << " ";
+    DFS(vertex->right, fout);
 }
 
-void SplayTree::Node::SetRight(Node* new_right)
+void SplayTree::Node::SetChild(Node* new_node, Node::Side child_side)
 {
-    right = new_right;
-    if (new_right != nullptr) {
-        new_right->parent = this;
+    if (child_side == Right) {
+        right = new_node;
+    } else {
+        left = new_node;
     }
-}
-
-void SplayTree::Node::SetLeft(Node* new_left)
-{
-    left = new_left;
-    if (new_left != nullptr) {
-        new_left->parent = this;
+    if (new_node != nullptr) {
+        new_node->parent = this;
     }
 }
 
@@ -156,108 +157,51 @@ void SplayTree::Node::Update(Node* vertex)
         return;
     }
     
-    // Push(vertex);                    // TODO: Maybe need to uncomment
-    
     Push(vertex->left);
     Push(vertex->right);
     
-    vertex->size = Size(vertex->left) + Size(vertex->right) + 1;
-    vertex->summ = GetSumm(vertex->left) + GetSumm(vertex->right) + vertex->data;
-    vertex->min = std::min(std::min(GetMin(vertex->left), GetMin(vertex->right)), vertex->data);
-    vertex->max = std::max(std::max(GetMax(vertex->left), GetMax(vertex->right)), vertex->data);
+    vertex->size = GetField<size_t>(vertex->left, &Node::size, 0u) + GetField<size_t>(vertex->right, &Node::size, 0u) + 1;
     
-    vertex->_LeftVertex = (vertex->left == nullptr ? vertex->data : GetLeftVertex(vertex->left));
-    vertex->_RightVertex = (vertex->right == nullptr ? vertex->data : GetRightVertex(vertex->right));
+    vertex->summ = GetField<long long>(vertex->left, &Node::summ, 0) +
+                   GetField<long long>(vertex->right, &Node::summ, 0) +
+                   vertex->data;
     
-    vertex->_lowerSuffix = GetLowerSuffix(vertex->right);
-    if (GetLowerSuffix(vertex->right) == Size(vertex->right)) {
-        if (vertex->right == nullptr || vertex->data >= GetLeftVertex(vertex->right)) {
-            vertex->_lowerSuffix++;
-            if (vertex->left != nullptr && GetRightVertex(vertex->left) >= vertex->data) {
-                vertex->_lowerSuffix += GetLowerSuffix(vertex->left);
+    vertex->min = std::min(std::min(GetField<long long>(vertex->left, &Node::min, INT_MAX),
+                                    GetField<long long>(vertex->right, &Node::min, INT_MAX)),
+                                    vertex->data);
+    vertex->max = std::max(std::max(GetField<long long>(vertex->left, &Node::max, INT_MIN),
+                                    GetField<long long>(vertex->right, &Node::max, INT_MIN)),
+                                    vertex->data);
+    
+    vertex->_LeftVertex = (vertex->left == nullptr ? vertex->data : GetField<long long>(vertex->left, &Node::_LeftVertex, 0));
+    vertex->_RightVertex = (vertex->right == nullptr ? vertex->data : GetField<long long>(vertex->right, &Node::_RightVertex, 0));
+    
+    auto func = [&vertex](size_t Node::* member, Node* Node::* first, Node* Node::* second, long long Node::* left, long long Node::* right, std::function<bool(long long, long long)> comp) {
+        
+        vertex->*member = GetField<size_t>(vertex->*first, member, 0);
+        if (GetField<size_t>(vertex->*first, member, 0) == GetField<size_t>(vertex->*first, &Node::size, 0u)) {
+            if (vertex->*first == nullptr || comp(vertex->data, GetField<long long>(vertex->*first, left, 0))) {
+                (vertex->*member)++;
+                if (vertex->*second != nullptr && comp(GetField<long long>(vertex->*second, right, 0), vertex->data)) {
+                    vertex->*member += GetField<size_t>(vertex->*second, member, 0);
+                }
             }
         }
-    }
+    };
     
-    vertex->_upperSuffix = GetUpperSuffix(vertex->right);
-    if (GetUpperSuffix(vertex->right) == Size(vertex->right)) {
-        if (vertex->right == nullptr || vertex->data <= GetLeftVertex(vertex->right)) {
-            vertex->_upperSuffix++;
-            if (vertex->left != nullptr && GetRightVertex(vertex->left) <= vertex->data) {
-                vertex->_upperSuffix += GetUpperSuffix(vertex->left);
-            }
-        }
-    }
+    func(&Node::_lowerSuffix, &Node::right, &Node::left, &Node::_LeftVertex, &Node::_RightVertex, [](long long lhs, long long rhs){ return lhs >= rhs; });
     
-    vertex->_lowerPrefix = GetLowerPrefix(vertex->left);
-    if (GetLowerPrefix(vertex->left) == Size(vertex->left)) {
-        if (vertex->left == nullptr || GetRightVertex(vertex->left) >= vertex->data) {
-            vertex->_lowerPrefix++;
-            if (vertex->right != nullptr && vertex->data >= GetLeftVertex(vertex->right)) {
-                vertex->_lowerPrefix += GetLowerPrefix(vertex->right);
-            }
-        }
-    }
+    func(&Node::_upperSuffix, &Node::right, &Node::left, &Node::_LeftVertex, &Node::_RightVertex, [](long long lhs, long long rhs){ return lhs <= rhs; });
+
+    func(&Node::_lowerPrefix, &Node::left, &Node::right, &Node::_RightVertex, &Node::_LeftVertex, [](long long lhs, long long rhs){ return lhs <= rhs; });
     
-    vertex->_upperPrefix = GetUpperPrefix(vertex->left);
-    if (GetUpperPrefix(vertex->left) == Size(vertex->left)) {
-        if (vertex->left == nullptr || GetRightVertex(vertex->left) <= vertex->data) {
-            vertex->_upperPrefix++;
-            if (vertex->right != nullptr && vertex->data <= GetLeftVertex(vertex->right)) {
-                vertex->_upperPrefix += GetUpperPrefix(vertex->right);
-            }
-        }
-    }
+    func(&Node::_upperPrefix, &Node::left, &Node::right, &Node::_RightVertex, &Node::_LeftVertex, [](long long lhs, long long rhs){ return lhs >= rhs; });
 }
 
-size_t SplayTree::Node::Size(Node* vertex)
+template <typename V>
+V SplayTree::Node::GetField(Node* vertex, V Node::* member, V default_value)
 {
-    return (vertex == nullptr ? 0u : vertex->size);
-}
-
-long long SplayTree::Node::GetMin(Node* vertex)
-{
-    return (vertex == nullptr ? INT_MAX : vertex->min);
-}
-
-long long SplayTree::Node::GetMax(Node* vertex)
-{
-     return (vertex == nullptr ? INT_MIN : vertex->max);
-}
-
-long long SplayTree::Node::GetSumm(Node* vertex)
-{
-     return (vertex == nullptr ? 0 : vertex->summ);
-}
-
-long long SplayTree::Node::GetLeftVertex(Node* vertex)
-{
-     return (vertex == nullptr ? 0 : vertex->_LeftVertex);
-}
-
-long long SplayTree::Node::GetRightVertex(Node* vertex)
-{
-     return (vertex == nullptr ? 0 : vertex->_RightVertex);
-}
-
-size_t SplayTree::Node::GetLowerSuffix(Node* vertex)
-{
-    return (vertex == nullptr ? 0 : vertex->_lowerSuffix);
-}
-
-size_t SplayTree::Node::GetUpperSuffix(Node* vertex)
-{
-    return (vertex == nullptr ? 0 : vertex->_upperSuffix);
-}
-
-size_t SplayTree::Node::GetLowerPrefix(Node* vertex)
-{
-    return (vertex == nullptr ? 0 : vertex->_lowerPrefix);
-}
-
-size_t SplayTree::Node::GetUpperPrefix(Node* vertex)
-{
-    return (vertex == nullptr ? 0 : vertex->_upperPrefix);
+    return (vertex ? vertex->*member : default_value);
 }
 
 void SplayTree::Node::SetFlag_SetElem(Node* vertex, const long long& elem)
@@ -331,45 +275,35 @@ void SplayTree::Node::Push(Node* vertex)
         std::swap(vertex->left, vertex->right);
     }
     
-    // Push info to childs
-    if (vertex->left != nullptr) {
-        Node* v_left = vertex->left;
+    auto PushHelp = [vertex](Node* curr_v) {
+        if (curr_v == nullptr) {
+            return;
+        }
         
         if (vertex->_set) {
-            v_left->_add = false;
-            v_left->_updateAdd = 0;
-            v_left->_set = true;
-            v_left->_updateSet = vertex->_updateSet;
+            curr_v->_add = false;
+            curr_v->_updateAdd = 0;
+            curr_v->_set = true;
+            curr_v->_updateSet = vertex->_updateSet;
         }
         
         if (vertex->_add) {
-            v_left->_add = true;
-            v_left->_updateAdd += vertex->_updateAdd;
+            curr_v->_add = true;
+            curr_v->_updateAdd += vertex->_updateAdd;
         }
-        v_left->_reverse ^= vertex->_reverse;
-    }
-    if (vertex->right != nullptr) {
-        Node* v_right = vertex->right;
-        
-        if (vertex->_set) {
-            v_right->_add = false;
-            v_right->_updateAdd = 0;
-            v_right->_set = true;
-            v_right->_updateSet = vertex->_updateSet;
-        }
-        
-        if (vertex->_add) {
-            v_right->_add = true;
-            v_right->_updateAdd += vertex->_updateAdd;
-        }
-        v_right->_reverse ^= vertex->_reverse;
-    }
+        curr_v->_reverse ^= vertex->_reverse;
+    };
+    
+    // Push into childs
+    PushHelp(vertex->left);
+    PushHelp(vertex->right);
+    
     
     vertex->_add = vertex->_set = vertex->_reverse = false;
     vertex->_updateSet = vertex->_updateAdd = 0;
 }
 
-void SplayTree::_RightRotate(Node* target)
+void SplayTree::_Rotate(Node* target, bool is_left)
 {
     if (target == nullptr || target->parent == nullptr) {
         return;
@@ -380,35 +314,24 @@ void SplayTree::_RightRotate(Node* target)
     Node::Push(local_root);
     Node::Push(target);
     
-    local_root->SetLeft(target->right);
+    local_root->SetChild((is_left ? target->left : target->right), (is_left ? Node::Right : Node::Left));
     
     _Transplant(local_root, target);
     
-    target->SetRight(local_root);
+    target->SetChild(local_root, (is_left ? Node::Left : Node::Right));
     
     Node::Update(local_root);
     Node::Update(target);
 }
 
+void SplayTree::_RightRotate(Node* target)
+{
+    _Rotate(target, false);
+}
+
 void SplayTree::_LeftRotate(Node* target)
 {
-    if (target == nullptr || target->parent == nullptr) {
-        return;
-    }
-    
-    Node* local_root = target->parent;
-    
-    Node::Push(local_root);
-    Node::Push(target);
-    
-    local_root->SetRight(target->left);
-    
-    _Transplant(local_root, target);
-    
-    target->SetLeft(local_root);
-    
-    Node::Update(local_root);
-    Node::Update(target);
+    _Rotate(target, true);
 }
 
 void SplayTree::_ZigMove(Node* pivot)
@@ -510,10 +433,10 @@ SplayTree::Node* SplayTree::_FindVertex(Node* vertex, size_t pos)
     while (vertex->left != nullptr || vertex->right != nullptr) {
         
         Node::Push(vertex);
-        if (pos == Node::Size(vertex->left)) {
+        if (pos == Node::GetField<size_t>(vertex->left, &Node::size, 0u)) {
             break;
         }
-        if (pos < Node::Size(vertex->left)) {
+        if (pos < Node::GetField<size_t>(vertex->left, &Node::size, 0u)) {
             if (vertex->left == nullptr) {
                 break;
             }
@@ -522,7 +445,7 @@ SplayTree::Node* SplayTree::_FindVertex(Node* vertex, size_t pos)
             if (vertex->right == nullptr) {
                 break;
             }
-            pos -= Node::Size(vertex->left) + 1;
+            pos -= Node::GetField<size_t>(vertex->left, &Node::size, 0u) + 1;
             vertex = vertex->right;
         }
     }
@@ -541,8 +464,8 @@ SplayTree::Node* SplayTree::_Merge(Node* lhs, Node* rhs)
         return lhs;
     }
     
-    lhs = _FindVertex(lhs, Node::Size(lhs));
-    lhs->SetRight(rhs);
+    lhs = _FindVertex(lhs, Node::GetField<size_t>(lhs, &Node::size, 0u));
+    lhs->SetChild(rhs, Node::Right);
     
     Node::Update(rhs);
     Node::Update(lhs);
@@ -556,7 +479,7 @@ std::pair<SplayTree::Node*, SplayTree::Node*> SplayTree::_Split(Node* local_root
         return {nullptr, nullptr};
     }
     
-    if (Node::Size(local_root) <= indx) {
+    if (Node::GetField<size_t>(local_root, &Node::size, 0u) <= indx) {
         return {local_root, nullptr};
     }
     
@@ -609,225 +532,184 @@ void SplayTree::Insert(const long long& new_elem, size_t pos)
     _root= _Merge(_Merge(it.first, new_node), it.second);
 }
 
-long long SplayTree::GetSummOnSubsegment(size_t begin, size_t end)
+
+template <typename T>
+T SplayTree::_SubsegmentOperation(size_t begin, size_t end, std::function<T(Node*&)> func)
 {
     auto it = _Split(_root, end + 1);
     auto it2 = _Split(it.first, begin);
     
-    long long answer = Node::GetSumm(it2.second);
+    T result = func(it2.second);
     
     _root = _Merge(_Merge(it2.first, it2.second), it.second);
     
-    return answer;
+    return result;
+}
+
+template <>
+void SplayTree::_SubsegmentOperation<void>(size_t begin, size_t end, std::function<void(Node*&)> func)
+{
+    auto it = _Split(_root, end + 1);
+    auto it2 = _Split(it.first, begin);
+    
+    func(it2.second);
+    
+    _root = _Merge(_Merge(it2.first, it2.second), it.second);
+}
+
+long long SplayTree::GetSummOnSubsegment(size_t begin, size_t end)
+{
+    return _SubsegmentOperation<long long>(begin, end, [](Node* vertex){ return Node::GetField<long long>(vertex, &Node::summ, 0); });
 }
 
 void SplayTree::SetElemOnSubsegment(const long long& elem, size_t begin, size_t end)
 {
-    auto it = _Split(_root, end + 1);
-    auto it2 = _Split(it.first, begin);
-    
-    Node::SetFlag_SetElem(it2.second, elem);
-    
-    _root = _Merge(_Merge(it2.first, it2.second), it.second);
+    return _SubsegmentOperation<void>(begin, end, [&elem](Node* vertex){ return Node::SetFlag_SetElem(vertex, elem); });
 }
 
 void SplayTree::AddElemOnSubsegment(const long long& elem, size_t begin, size_t end)
 {
-    auto it = _Split(_root, end + 1);
-    auto it2 = _Split(it.first, begin);
+    return _SubsegmentOperation<void>(begin, end, [&elem](Node* vertex){ return Node::SetFlag_AddElem(vertex, elem); });
+}
+
+void SplayTree::_PermutationOnSubsegment(Node*& local_root, bool next_perm)
+{
+    std::function<bool(long long, long long)> comp;
+    if (next_perm) {
+        comp = [](long long lhs, long long rhs) {
+            return lhs > rhs;
+        };
+    } else {
+        comp = [](long long lhs, long long rhs) {
+            return lhs < rhs;
+        };
+    }
     
-    Node::SetFlag_AddElem(it2.second, elem);
+    size_t Suffix = Node::GetField<size_t>(local_root, (next_perm ? &Node::_lowerSuffix : &Node::_upperSuffix), 0);
+    size_t left_size = Node::GetField<size_t>(local_root, &Node::size, 0u) - Suffix;
     
-    _root = _Merge(_Merge(it2.first, it2.second), it.second);
+    if (left_size == 0) {
+        Node::SetFlag_Reverse(local_root);
+        return;
+    }
+    
+    auto split1 = _Split(local_root, left_size);
+    auto split2 = _Split(split1.first, Node::GetField<size_t>(split1.first, &Node::size, 0u) - 1);
+    
+    auto local_left_part = split2.first;
+    auto vertex_to_swap = split2.second;
+    long long element_to_swap = vertex_to_swap->data;
+    
+    Node* vertex = split1.second;
+    
+    while (vertex != nullptr) {
+        
+        Node::Push(vertex);
+        Node::Update(vertex);
+        
+        if (comp(vertex->data, element_to_swap)) {
+            if (vertex->right == nullptr || !comp((next_perm ? Node::GetField<long long>(vertex->right, &Node::max, INT_MIN) :
+                                                               Node::GetField<long long>(vertex->right, &Node::min, INT_MAX)), element_to_swap)) {
+                break;
+            }
+            vertex = vertex->right;
+        } else {
+            vertex = vertex->left;
+        }
+    }
+    
+    _Splay(vertex);
+    
+    std::swap(vertex->data, vertex_to_swap->data);
+    Node::Update(vertex);
+    Node::Update(vertex_to_swap);
+    
+    Node::SetFlag_Reverse(vertex);
+    
+    local_root = _Merge(_Merge(local_left_part, vertex_to_swap), vertex);
 }
 
 void SplayTree::NextPermutationOnSubsegment(size_t begin, size_t end)
 {
-    auto it = _Split(_root, end + 1);
-    auto it2 = _Split(it.first, begin);
-    
-    auto left_part = it2.first;
-    auto right_part = it.second;
-    auto local_root = it2.second;
-    
-    size_t lowerSuffix = Node::GetLowerSuffix(local_root);
-    size_t left_size = Node::Size(local_root) - lowerSuffix;
-    
-    if (left_size == 0) {
-        Node::SetFlag_Reverse(local_root);
-        _root = _Merge(_Merge(left_part, local_root), right_part);
-        return;
-    }
-    
-    auto split1 = _Split(local_root, left_size);
-    auto split2 = _Split(split1.first, Node::Size(split1.first) - 1);
-    
-    auto local_left_part = split2.first;
-    auto local_right_part = split1.second;
-    auto vertex_to_swap = split2.second;
-    
-    long long element_to_swap = vertex_to_swap->data;
-    
-    Node* vertex = split1.second;
-    
-    while (vertex != nullptr) {
-        
-        Node::Push(vertex);
-        Node::Update(vertex);
-        
-        if (vertex->data > element_to_swap) {
-            if (vertex->right == nullptr || Node::GetMax(vertex->right) <= element_to_swap) {
-                break;
-            }
-            vertex = vertex->right;
-        } else {
-            vertex = vertex->left;
-        }
-    }
-    
-    _Splay(vertex);
-    
-    std::swap(vertex->data, vertex_to_swap->data);
-    Node::Update(vertex);
-    Node::Update(vertex_to_swap);
-    
-    Node::SetFlag_Reverse(vertex);
-    
-    local_root = _Merge(_Merge(local_left_part, vertex_to_swap), vertex);
-    _root = _Merge(_Merge(left_part, local_root), right_part);
+    return _SubsegmentOperation<void>(begin, end, [this](Node*& vertex){ return _PermutationOnSubsegment(vertex, true); });
 }
 
 void SplayTree::PrevPermutationOnSubsegment(size_t begin, size_t end)
 {
-    auto it = _Split(_root, end + 1);
-    auto it2 = _Split(it.first, begin);
-    
-    auto left_part = it2.first;
-    auto right_part = it.second;
-    auto local_root = it2.second;
-    
-    size_t upperSuffix = Node::GetUpperSuffix(local_root);
-    size_t left_size = Node::Size(local_root) - upperSuffix;
-    
-    if (left_size == 0) {
-        Node::SetFlag_Reverse(local_root);
-        _root = _Merge(_Merge(left_part, local_root), right_part);
-        return;
-    }
-    
-    auto split1 = _Split(local_root, left_size);
-    auto split2 = _Split(split1.first, Node::Size(split1.first) - 1);
-    
-    auto local_left_part = split2.first;
-    auto vertex_to_swap = split2.second;
-    long long element_to_swap = vertex_to_swap->data;
-    
-    Node* vertex = split1.second;
-    
-    while (vertex != nullptr) {
-        
-        Node::Push(vertex);
-        Node::Update(vertex);
-        
-        if (vertex->data < element_to_swap) {
-            if (vertex->right == nullptr || Node::GetMin(vertex->right) >= element_to_swap) {
-                break;
-            }
-            vertex = vertex->right;
-        } else {
-            vertex = vertex->left;
-        }
-    }
-    
-    _Splay(vertex);
-    
-    std::swap(vertex->data, vertex_to_swap->data);
-    Node::Update(vertex);
-    Node::Update(vertex_to_swap);
-    
-    Node::SetFlag_Reverse(vertex);
-    
-    local_root = _Merge(_Merge(local_left_part, vertex_to_swap), vertex);
-    _root = _Merge(_Merge(left_part, local_root), right_part);
+    return _SubsegmentOperation<void>(begin, end, [this](Node*& vertex){ return _PermutationOnSubsegment(vertex, false); });
 }
 
-void SplayTree::PrintTree() {
-    DFS(_root);
+void SplayTree::PrintTree(std::ostream& fout) {
+    DFS(_root, fout);
 }
 
-
-using std::cin;
-using std::cout;
-
-int main() {
-    std::ios_base::sync_with_stdio(false);
-    std::cin.tie(nullptr);
-    
+void solve(std::istream& fin, std::ostream& fout)
+{
     SplayTree tree;
     
     size_t n;
-    std::cin >> n;
+    fin >> n;
     
     for (size_t i = 0; i < n; i++) {
         long long elem;
-        std::cin >> elem;
+        fin >> elem;
         tree.Insert(elem, i);
     }
     
     size_t q;
-    std::cin >> q;
+    fin >> q;
     
     for (size_t i = 0; i < q; i++) {
         long long type;
-        std::cin >> type;
+        fin >> type;
         
         long long x;
         size_t pos, l, r;
         switch (type) {
             case 1:
-                std::cin >> l >> r;
+                fin >> l >> r;
                 
-                std::cout << tree.GetSummOnSubsegment(l, r) << "\n";
+                fout << tree.GetSummOnSubsegment(l, r) << "\n";
                 
                 break;
                 
             case 2:
-                std::cin >> x >> pos;
+                fin >> x >> pos;
                 
                 tree.Insert(x, pos);
                 
                 break;
                 
             case 3:
-                std::cin >> pos;
+                fin >> pos;
                 
                 tree.Delete(pos);
                 
                 break;
                 
             case 4:
-                std::cin >> x >> l >> r;
+                fin >> x >> l >> r;
                 
                 tree.SetElemOnSubsegment(x, l, r);
                 
                 break;
                 
             case 5:
-                std::cin >> x >> l >> r;
+                fin >> x >> l >> r;
                 
                 tree.AddElemOnSubsegment(x, l, r);
                 
                 break;
                 
             case 6:
-                std::cin >> l >> r;
+                fin >> l >> r;
                 
                 tree.NextPermutationOnSubsegment(l, r);
                 
                 break;
                 
             case 7:
-                std::cin >> l >> r;
+                fin >> l >> r;
                    
                 tree.PrevPermutationOnSubsegment(l, r);
                    
@@ -835,7 +717,18 @@ int main() {
         }
     }
     
-    tree.PrintTree();
+    tree.PrintTree(fout);
+}
+
+
+int main() {
+    using std::cin;
+    using std::cout;
+    
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    
+    solve(cin, cout);
     
     return 0;
 }
