@@ -31,6 +31,8 @@ private:
     static void DFS(Node*, std::ostream&);
     static void DeleteTree(Node*);
     
+    static void _RecountSuffPref(Node*& vertex, size_t Node::* member, Node* Node::* first, Node* Node::* second, long long Node::* left, long long Node::* right, std::function<bool(long long, long long)> comp);
+    
 public:
     SplayTree() : _root(nullptr) {}
     ~SplayTree();
@@ -77,13 +79,13 @@ struct SplayTree::Node
                         _upperSuffix(1), _lowerSuffix(1), _upperPrefix(1), _lowerPrefix(1),
                         _LeftVertex(0), _RightVertex(0) {}
     
-    Node(long long element, size_t size = 1, long long summ = 0, Node* left = nullptr, Node* right = nullptr, Node* parent = nullptr) :
+    explicit Node(long long element, size_t size = 1, long long summ = 0, Node* left = nullptr, Node* right = nullptr, Node* parent = nullptr) :
                         data(element), size(size), summ(summ), min(element), max(element), left(left), right(right), parent(parent),
                         _set(false), _updateSet(0), _add(false), _updateAdd(0), _reverse(false),
                         _upperSuffix(1), _lowerSuffix(1), _upperPrefix(1), _lowerPrefix(1),
                         _LeftVertex(element), _RightVertex(element) {}
     
-    Node(const Node& rhs) : data(rhs.data), size(rhs.size), summ(rhs.summ), min(rhs.min), max(rhs.max), left(rhs.left), right(rhs.right), parent(rhs.parent),
+    explicit Node(const Node& rhs) : data(rhs.data), size(rhs.size), summ(rhs.summ), min(rhs.min), max(rhs.max), left(rhs.left), right(rhs.right), parent(rhs.parent),
                         _set(false), _updateSet(0), _add(false), _updateAdd(0), _reverse(false),
                         _upperSuffix(rhs._upperSuffix), _lowerSuffix(rhs._lowerSuffix),
                         _upperPrefix(rhs._upperPrefix), _lowerPrefix(rhs._lowerPrefix),
@@ -151,6 +153,19 @@ void SplayTree::Node::SetChild(Node* new_node, Node::Side child_side)
     }
 }
 
+void SplayTree::_RecountSuffPref(Node*& vertex, size_t Node::* member, Node* Node::* first, Node* Node::* second, long long Node::* left, long long Node::* right, std::function<bool(long long, long long)> comp) {
+    
+    vertex->*member = Node::GetField<size_t>(vertex->*first, member, 0);
+    if (Node::GetField<size_t>(vertex->*first, member, 0) == Node::GetField<size_t>(vertex->*first, &Node::size, 0u)) {
+        if (vertex->*first == nullptr || comp(vertex->data, Node::GetField<long long>(vertex->*first, left, 0))) {
+            (vertex->*member)++;
+            if (vertex->*second != nullptr && comp(Node::GetField<long long>(vertex->*second, right, 0), vertex->data)) {
+                vertex->*member += Node::GetField<size_t>(vertex->*second, member, 0);
+            }
+        }
+    }
+};
+
 void SplayTree::Node::Update(Node* vertex)
 {
     if (vertex == nullptr) {
@@ -176,26 +191,13 @@ void SplayTree::Node::Update(Node* vertex)
     vertex->_LeftVertex = (vertex->left == nullptr ? vertex->data : GetField<long long>(vertex->left, &Node::_LeftVertex, 0));
     vertex->_RightVertex = (vertex->right == nullptr ? vertex->data : GetField<long long>(vertex->right, &Node::_RightVertex, 0));
     
-    auto func = [&vertex](size_t Node::* member, Node* Node::* first, Node* Node::* second, long long Node::* left, long long Node::* right, std::function<bool(long long, long long)> comp) {
-        
-        vertex->*member = GetField<size_t>(vertex->*first, member, 0);
-        if (GetField<size_t>(vertex->*first, member, 0) == GetField<size_t>(vertex->*first, &Node::size, 0u)) {
-            if (vertex->*first == nullptr || comp(vertex->data, GetField<long long>(vertex->*first, left, 0))) {
-                (vertex->*member)++;
-                if (vertex->*second != nullptr && comp(GetField<long long>(vertex->*second, right, 0), vertex->data)) {
-                    vertex->*member += GetField<size_t>(vertex->*second, member, 0);
-                }
-            }
-        }
-    };
+    _RecountSuffPref(vertex, &Node::_lowerSuffix, &Node::right, &Node::left, &Node::_LeftVertex, &Node::_RightVertex, std::greater_equal<>());
     
-    func(&Node::_lowerSuffix, &Node::right, &Node::left, &Node::_LeftVertex, &Node::_RightVertex, [](long long lhs, long long rhs){ return lhs >= rhs; });
-    
-    func(&Node::_upperSuffix, &Node::right, &Node::left, &Node::_LeftVertex, &Node::_RightVertex, [](long long lhs, long long rhs){ return lhs <= rhs; });
+    _RecountSuffPref(vertex, &Node::_upperSuffix, &Node::right, &Node::left, &Node::_LeftVertex, &Node::_RightVertex, std::less_equal<>());
 
-    func(&Node::_lowerPrefix, &Node::left, &Node::right, &Node::_RightVertex, &Node::_LeftVertex, [](long long lhs, long long rhs){ return lhs <= rhs; });
+    _RecountSuffPref(vertex, &Node::_lowerPrefix, &Node::left, &Node::right, &Node::_RightVertex, &Node::_LeftVertex, std::less_equal<>());
     
-    func(&Node::_upperPrefix, &Node::left, &Node::right, &Node::_RightVertex, &Node::_LeftVertex, [](long long lhs, long long rhs){ return lhs >= rhs; });
+    _RecountSuffPref(vertex, &Node::_upperPrefix, &Node::left, &Node::right, &Node::_RightVertex, &Node::_LeftVertex, std::greater_equal<>());
 }
 
 template <typename V>
