@@ -115,6 +115,9 @@ optional<T>& optional<T>::operator=( nullopt_t ) {
 
 template <typename T>
 optional<T>& optional<T>::operator=(const optional<T>& other) {
+    if (this == &other) {
+        return *this;
+    }
     flag = other.flag;
     elem = new T(*other.elem);
     
@@ -123,6 +126,9 @@ optional<T>& optional<T>::operator=(const optional<T>& other) {
 
 template <typename T>
 optional<T>& optional<T>::operator=(optional<T>&& other) {
+    if (this == &other) {
+        return *this;
+    }
     flag = other.flag;
     elem = other.elem;
     other.elem = nullptr;
