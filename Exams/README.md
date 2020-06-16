@@ -6,6 +6,7 @@
 
 - std::optional
 - std::string
+- biginteger
 
 ## Описания
 
@@ -14,3 +15,8 @@
 
 ### std::string
 Ну, если захотите сюда вписать свою рекламу - пишите) Надеюсь там все понятно)
+Thanks to [Tanya Micheeva](https://github.com/tanyaamiheeva)
+
+### biginteger
+Тут снова вроде все понятно, аккуратно пишем все)
+Thanks to [Tanya Micheeva](https://github.com/tanyaamiheeva)
