@@ -9,6 +9,7 @@
 - biginteger
 - std::array
 - std::valarray
+- std::advance & std::distance
 
 ## Описания
 
@@ -42,3 +43,9 @@ c = {2, 4, 6}
 */
 ```
 Ну и также очень много всего полезного)
+
+### std::advance & std::distance
+std::advance сдвигает итератор на n шагов
+std::distance считает расстояние между итераторами
+
+Проблема их в том, что они могут быть как Random access, так и не Random access
