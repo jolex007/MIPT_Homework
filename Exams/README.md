@@ -7,6 +7,8 @@
 - std::optional
 - std::string
 - biginteger
+- std::array
+- std::valarray
 
 ## Описания
 
@@ -15,8 +17,28 @@
 
 ### std::string
 Ну, если захотите сюда вписать свою рекламу - пишите) Надеюсь там все понятно)
+
 Thanks to [Tanya Micheeva](https://github.com/tanyaamiheeva)
 
 ### biginteger
 Тут снова вроде все понятно, аккуратно пишем все)
+
 Thanks to [Tanya Micheeva](https://github.com/tanyaamiheeva)
+
+### std::array
+Просто надстройка над std::array
+
+Thanks to [Tanya Micheeva](https://github.com/tanyaamiheeva)
+
+### std::valarray
+Очень удобные массивы, почти как в питоне
+Пример:
+```cpp
+std::valarray<int> a = {1, 2, 3};
+std::valarray<int> b = {1, 2, 3};
+std::valarray<int> c = a + b;
+/*
+c = {2, 4, 6}
+*/
+```
+Ну и также очень много всего полезного)
