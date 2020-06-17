@@ -10,6 +10,10 @@
 - std::array
 - std::valarray
 - std::advance & std::distance
+- std::shared_ptr (директория выше)
+- std::unique_ptr (директория выше)
+- std::weak_ptr (директория выше)
+- SFINA method check
 
 ## Описания
 
@@ -49,3 +53,19 @@ std::advance сдвигает итератор на n шагов
 std::distance считает расстояние между итераторами
 
 Проблема их в том, что они могут быть как Random access, так и не Random access
+
+Thanks to [Tanya Micheeva](https://github.com/tanyaamiheeva)
+
+### std::unqiue_ptr
+Не особо понтовый вид умных указателей, поэтому их несложно писать)
+
+### std::shared_ptr
+Основная идея - храним динамическую структурку с нашим элементом, и счетчиком указателей. Пишется очень неприятно(
+
+### std::weak_ptr
+Надстройка над shared_ptr. В той структурке храним еще один счетчик. И указатель на эту структурку
+
+### SFINAE method check
+Проверяем есть ли в классе "Class" метод "name", для этого используем SFINAE
+
+
