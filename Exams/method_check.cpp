@@ -16,10 +16,10 @@ struct is_same<T, T> {
  name - name of method
  */
 template <typename Class, typename... Args>
-struct has_method_name {
-private:
-    template <typename T>
-    static decltype(Class().name(Args()...), bool()) f(T) {
+struct has_method {
+    
+    template <typename Class2, typename... Args2>
+    static decltype(std::declval<Class2>().method(std::declval<Args2>()...), int()) f(int) {
         return 0;
     }
     
@@ -27,9 +27,8 @@ private:
     static char f(...) {
         return 0;
     }
-    
-public:
-    static const bool value = is_same<decltype(f(0)), char>::value;
+  
+    static const bool value = is_same<decltype(f<Class, Args...>(0)), int>::value;
 };
 
 

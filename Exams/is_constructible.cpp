@@ -15,7 +15,7 @@ template <typename Class, typename... Args>
 struct is_constructible {
 private:
     template <typename T, typename... Args2>
-    static decltype(T(Args2()...), char()) f(int x) {
+    static decltype(T(std::declval<Args2>()...), char()) f(int x) {
         return 0;
     }
     

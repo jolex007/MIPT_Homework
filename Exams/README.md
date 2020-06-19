@@ -10,11 +10,12 @@
 - std::array
 - std::valarray
 - std::advance & std::distance
-- std::shared_ptr (директория выше)
+- std::shared_ptr
 - std::unique_ptr (директория выше)
 - std::weak_ptr (директория выше)
 - SFINAE method check
 - SFINAE is_constructible
+- std::list with iterators
 
 ## Описания
 
@@ -73,3 +74,7 @@ Thanks to [Tanya Micheeva](https://github.com/tanyaamiheeva)
 
 ### SFINAE is_constructible
 Примерно также, как и method check
+
+### std::list with iterators
+Никакой идеи, просто двусвязный список)
+Thanks to [Tanya Micheeva](https://github.com/tanyaamiheeva)
